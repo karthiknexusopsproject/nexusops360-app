@@ -1,0 +1,2924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NexusOps360 — Operations Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --brand:#4f46e5;--brand-dark:#3730a3;--brand-soft:#eef2ff;
+  --bg:#ffffff;--surface:#ffffff;--surface-2:#f8fafc;--surface-3:#f1f5f9;
+  --border:#e2e8f0;--border-soft:#f1f5f9;
+  --text:#0f172a;--t2:#475569;--t3:#94a3b8;
+  --green:#10b981;--green-soft:#d1fae5;
+  --orange:#f97316;--orange-soft:#ffedd5;
+  --yellow:#eab308;--yellow-soft:#fef9c3;
+  --red:#ef4444;--red-soft:#fee2e2;
+  --cyan:#0891b2;--cyan-soft:#cffafe;
+  --r-sm:4px;--r-md:6px;--r-lg:8px;--r-xl:12px;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.04);
+  --shadow-md:0 4px 6px -1px rgba(15,23,42,.06),0 2px 4px -2px rgba(15,23,42,.04);
+  --shadow-lg:0 10px 15px -3px rgba(15,23,42,.08),0 4px 6px -4px rgba(15,23,42,.04);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono','Consolas',monospace;
+  --t-fast:120ms ease;--t-base:200ms ease;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--brand);text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 100%);z-index:1000}
+.login-card{width:420px;max-width:92vw;background:#fff;border-radius:var(--r-xl);box-shadow:var(--shadow-lg);padding:32px;border:1px solid var(--border)}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.login-brand-mark{width:42px;height:42px;border-radius:var(--r-lg);background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px}
+.login-brand-text{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.login-brand-text small{display:block;font-size:12px;font-weight:500;color:var(--t2);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.login-tabs{display:flex;gap:4px;background:var(--surface-3);padding:4px;border-radius:var(--r-md);margin-bottom:16px}
+.login-tab{flex:1;padding:8px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--t2);transition:all var(--t-fast);text-align:center}
+.login-tab.active{background:#fff;color:var(--text);box-shadow:var(--shadow-sm)}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;letter-spacing:.03em;text-transform:uppercase}
+.login-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:14px;transition:border-color var(--t-fast)}
+.login-input:focus{outline:none;border-color:var(--brand)}
+.login-btn{width:100%;padding:11px;background:var(--brand);color:#fff;border-radius:var(--r-md);font-weight:600;font-size:14px;letter-spacing:.02em;transition:background var(--t-fast);margin-top:6px}
+.login-btn:hover{background:var(--brand-dark)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-error{background:var(--red-soft);color:#991b1b;padding:9px 12px;border-radius:var(--r-md);font-size:13px;margin-top:10px;display:none}
+.login-footer{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--t3);text-align:center}
+/* APP SHELL */
+#app{display:none;height:100vh;flex-direction:column}
+#app.ready{display:flex}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0}
+.topbar-brand{display:flex;align-items:center;gap:9px}
+.topbar-brand-mark{width:30px;height:30px;border-radius:var(--r-md);background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}
+.topbar-brand-text{font-weight:700;font-size:15px;letter-spacing:-.01em}
+.topbar-divider{width:1px;height:24px;background:var(--border)}
+.module-title{font-weight:600;font-size:14px;color:var(--text);text-transform:uppercase;letter-spacing:.04em}
+.topbar-spacer{flex:1}
+.topbar-clock{font-family:var(--font-mono);font-size:12px;color:var(--t2);padding:5px 10px;background:var(--surface-3);border-radius:var(--r-sm)}
+.topbar-user{display:flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;background:var(--surface-3);border-radius:30px;cursor:pointer;transition:background var(--t-fast)}
+.topbar-user:hover{background:var(--brand-soft)}
+.topbar-avatar{width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}
+.topbar-user-meta{display:flex;flex-direction:column;line-height:1.2}
+.topbar-user-meta b{font-size:12px;font-weight:600}
+.topbar-user-meta small{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.05em}
+.topbar-icon-btn{width:32px;height:32px;border-radius:var(--r-md);display:grid;place-items:center;color:var(--t2);transition:all var(--t-fast)}
+.topbar-icon-btn:hover{background:var(--surface-3);color:var(--text)}
+.tabs{display:flex;gap:2px;padding:0 12px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
+.tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;transition:all var(--t-fast);display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text);background:var(--surface-2)}
+.tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.content{flex:1;overflow:auto;background:var(--surface-2)}
+.module{display:none;padding:18px}
+.module.active{display:block;animation:fadeIn .15s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* FILTER BAR */
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);margin-bottom:14px;align-items:center}
+.filter-label{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.filter-input{padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:13px;background:#fff;min-width:130px}
+.filter-input:focus{outline:none;border-color:var(--brand)}
+.filter-apply{padding:7px 14px;background:var(--brand);color:#fff;border-radius:var(--r-md);font-weight:600;font-size:13px}
+.filter-apply:hover{background:var(--brand-dark)}
+.filter-reset{padding:7px 14px;background:var(--surface-3);color:var(--text);border-radius:var(--r-md);font-weight:600;font-size:13px}
+.filter-reset:hover{background:var(--border)}
+/* MULTI-SELECT */
+.ms{position:relative;min-width:140px}
+.ms-trigger{display:flex;align-items:center;gap:6px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--r-md);background:#fff;font-size:13px;cursor:pointer;width:100%;text-align:left;color:var(--text)}
+.ms-trigger:hover{border-color:var(--brand)}
+.ms-trigger.has-value{border-color:var(--brand);background:var(--brand-soft)}
+.ms-label{flex:1;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-count{background:var(--brand);color:#fff;font-size:11px;padding:1px 6px;border-radius:8px;font-weight:600}
+.ms-caret{color:var(--t3);font-size:10px}
+.ms-panel{position:absolute;top:calc(100% + 4px);left:0;min-width:240px;max-width:340px;background:#fff;border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-lg);z-index:100;display:none;overflow:hidden}
+.ms.open .ms-panel{display:block}
+.ms-search{padding:8px;border-bottom:1px solid var(--border)}
+.ms-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px}
+.ms-actions{display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.ms-actions button{font-size:11px;padding:3px 8px;color:var(--brand);font-weight:600;border-radius:var(--r-sm)}
+.ms-actions button:hover{background:var(--brand-soft)}
+.ms-list{max-height:260px;overflow:auto}
+.ms-item{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:13px;cursor:pointer;transition:background var(--t-fast)}
+.ms-item:hover{background:var(--surface-2)}
+.ms-item input{cursor:pointer}
+.ms-item.empty{padding:12px;text-align:center;color:var(--t3);font-style:italic}
+/* CARDS / KPIs */
+.grid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:var(--shadow-sm);transition:box-shadow var(--t-fast)}
+.kpi-card:hover{box-shadow:var(--shadow-md)}
+.kpi-label{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-value{font-size:24px;font-weight:800;color:var(--text);font-family:var(--font-mono);letter-spacing:-.01em}
+.kpi-value.green{color:var(--green)}
+.kpi-value.orange{color:var(--orange)}
+.kpi-value.yellow{color:var(--yellow)}
+.kpi-value.red{color:var(--red)}
+.kpi-sub{font-size:11px;color:var(--t3);margin-top:3px}
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:14px}
+.card-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.card-body{padding:14px}
+.card-body.no-pad{padding:0}
+/* TABLES */
+.tbl-wrap{overflow:auto;max-height:600px;border-radius:var(--r-md)}
+table.dt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+table.dt thead th{background:var(--surface-3);font-weight:700;text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);color:var(--t2);font-size:11px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
+table.dt thead th:hover{background:var(--brand-soft)}
+table.dt thead th.no-sort{cursor:default}
+table.dt thead th.no-sort:hover{background:var(--surface-3)}
+table.dt thead th .sort-ind{margin-left:4px;font-size:10px;color:var(--t3)}
+table.dt tbody td{padding:8px 10px;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+table.dt tbody tr:hover td{background:var(--surface-2)}
+table.dt tbody tr:last-child td{border-bottom:0}
+table.dt .num{font-family:var(--font-mono);text-align:right;font-variant-numeric:tabular-nums}
+table.dt .center{text-align:center}
+table.dt .small{font-size:12px}
+.chip{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;font-family:var(--font-mono)}
+.chip.green{background:var(--green-soft);color:#047857}
+.chip.orange{background:var(--orange-soft);color:#9a3412}
+.chip.yellow{background:var(--yellow-soft);color:#854d0e}
+.chip.red{background:var(--red-soft);color:#991b1b}
+.chip.cyan{background:var(--cyan-soft);color:#0e7490}
+.chip.gray{background:var(--surface-3);color:var(--t2)}
+.tag{display:inline-block;padding:2px 6px;border-radius:var(--r-sm);font-size:11px;font-weight:600;background:var(--surface-3);color:var(--t2)}
+.btn{padding:7px 12px;border-radius:var(--r-md);font-weight:600;font-size:13px;transition:all var(--t-fast);display:inline-flex;align-items:center;gap:6px;border:1px solid transparent}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-dark)}
+.btn-soft{background:var(--surface-3);color:var(--text);border-color:var(--border)}
+.btn-soft:hover{background:var(--border-soft);border-color:var(--brand)}
+.btn-ghost{color:var(--t2)}
+.btn-ghost:hover{background:var(--surface-3);color:var(--text)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:4px 8px;font-size:12px}
+.pagination{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface-2);font-size:12px;color:var(--t2);flex-wrap:wrap}
+.pagination button{padding:4px 10px;border-radius:var(--r-sm);background:#fff;border:1px solid var(--border);font-weight:500}
+.pagination button:hover:not(:disabled){background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.4);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:var(--r-xl);width:600px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.modal.lg{width:840px}
+.modal-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-weight:700;font-size:15px}
+.modal-close{width:28px;height:28px;border-radius:var(--r-md);color:var(--t2);font-size:18px}
+.modal-close:hover{background:var(--surface-3);color:var(--text)}
+.modal-body{padding:18px;overflow:auto;flex:1}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.form-grid.cols-1{grid-template-columns:1fr}
+.form-grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-md);font-size:13px;background:#fff;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--brand)}
+.field textarea{resize:vertical;min-height:60px;font-family:inherit}
+.field.required label::after{content:' *';color:var(--red)}
+.field-help{font-size:11px;color:var(--t3);margin-top:2px}
+/* TOAST + LOADING */
+#toastHost{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--text);color:#fff;padding:11px 16px;border-radius:var(--r-md);box-shadow:var(--shadow-lg);font-size:13px;font-weight:500;animation:slideIn .2s ease;pointer-events:auto;max-width:380px}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.toast.warn{background:var(--orange)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+.loading-bar{position:fixed;top:0;left:0;right:0;height:2px;background:var(--brand);z-index:9999;transform-origin:left;animation:loadingPulse 1.2s linear infinite;display:none}
+.loading-bar.active{display:block}
+@keyframes loadingPulse{0%{transform:scaleX(0)}50%{transform:scaleX(.7)}100%{transform:scaleX(1)}}
+.empty-state{padding:60px 20px;text-align:center;color:var(--t2)}
+.empty-state .em-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty-state h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+.empty-state p{font-size:13px;margin-bottom:14px}
+.subtabs{display:flex;gap:4px;padding:4px;background:var(--surface-3);border-radius:var(--r-md);margin-bottom:14px;width:fit-content}
+.subtab{padding:6px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;transition:all var(--t-fast)}
+.subtab.active{background:#fff;color:var(--text);box-shadow:var(--shadow-sm)}
+.banner{padding:10px 14px;border-radius:var(--r-md);font-size:13px;margin-bottom:12px}
+.banner.warn{background:var(--yellow-soft);color:#854d0e;border:1px solid var(--yellow)}
+.banner.info{background:var(--brand-soft);color:#3730a3;border:1px solid var(--brand)}
+.banner.error{background:var(--red-soft);color:#991b1b;border:1px solid var(--red)}
+/* DOD EXCEL GRID */
+.dod-grid-wrap{overflow:auto;max-height:calc(100vh - 360px);border:1px solid var(--border);border-radius:var(--r-md);background:#fff}
+table.dod-grid{border-collapse:collapse;font-size:12px;table-layout:fixed;font-family:var(--font-mono)}
+table.dod-grid th,table.dod-grid td{border:1px solid var(--border);padding:0;height:26px;overflow:hidden;text-align:left;white-space:nowrap}
+table.dod-grid .cell-inner{padding:3px 6px;overflow:hidden;text-overflow:ellipsis}
+table.dod-grid .rownum{position:sticky;left:0;z-index:5;background:var(--surface-3);text-align:center;font-weight:700;color:var(--t2);min-width:48px;width:48px}
+table.dod-grid thead tr.col-letters th{position:sticky;top:0;z-index:8;background:var(--surface-3);text-align:center;font-weight:700;font-size:11px;color:var(--t2)}
+table.dod-grid thead tr.col-letters th:hover{background:var(--brand-soft);cursor:pointer}
+table.dod-grid thead tr.col-letters th.col-letter-forward{background:#dbeafe;color:#1e40af}
+table.dod-grid thead tr.col-letters th.col-letter-rto{background:#fed7aa;color:#9a3412}
+table.dod-grid thead tr.col-letters th.col-letter-separator{background:#cbd5e1}
+table.dod-grid tbody tr.frozen-row td{position:sticky;z-index:4;background:var(--surface-2);font-weight:600;font-size:11px;color:var(--t2)}
+table.dod-grid tbody tr.frozen-row-1 td{top:26px}
+table.dod-grid tbody tr.frozen-row-2 td{top:54px}
+table.dod-grid tbody tr.frozen-row-3 td{top:82px}
+table.dod-grid tbody tr.frozen-row-4 td{top:110px}
+table.dod-grid tbody tr.frozen-row-5 td{top:138px;background:#fef3c7;font-weight:700}
+table.dod-grid .col-j{position:sticky;left:48px;z-index:5;background:#fff;font-weight:600;color:var(--text);min-width:200px;width:200px}
+table.dod-grid .col-forward{background:#eff6ff}
+table.dod-grid .col-rto{background:#fff7ed}
+table.dod-grid .col-separator{background:#cbd5e1;min-width:6px;width:6px}
+table.dod-grid .col-separator .cell-inner{display:none}
+table.dod-grid tbody tr:not(.frozen-row):hover td{background:#fef9c3 !important}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--surface-2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+@media (max-width:768px){
+  .topbar{padding:0 10px;gap:8px}
+  .topbar-brand-text,.module-title{display:none}
+  .module{padding:10px}
+  .grid-stats{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .filter-bar{padding:8px;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-brand-mark">NX</div>
+      <div class="login-brand-text">NexusOps360
+        <small>Operations Intelligence Platform</small>
+      </div>
+    </div>
+    <div class="login-tabs">
+      <div class="login-tab active" data-login="mobile" onclick="setLoginType('mobile')">Mobile</div>
+      <div class="login-tab" data-login="email" onclick="setLoginType('email')">Email</div>
+    </div>
+    <div class="login-field">
+      <label id="loginIdLabel">Mobile Number</label>
+      <input class="login-input" id="loginId" placeholder="8888888888" autocomplete="off"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input class="login-input" id="loginPwd" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="off"/>
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="loginErr"></div>
+    <div class="login-footer">Authorised access only · Operations team</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-brand-mark">NX</div>
+      <div class="topbar-brand-text">NexusOps360</div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="module-title" id="moduleTitle">Dashboard</div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-clock" id="clock">--:--:--</div>
+    <div class="topbar-user">
+      <div class="topbar-avatar" id="uAvatar">--</div>
+      <div class="topbar-user-meta">
+        <b id="uName">User</b>
+        <small id="uRole">--</small>
+      </div>
+    </div>
+    <button class="topbar-icon-btn" onclick="doLogout()" title="Logout">⇲</button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <div class="tab active" data-tab="dashboard"  onclick="switchTab('dashboard')">📊 Dashboard</div>
+    <div class="tab" data-tab="review"            onclick="switchTab('review')">🔍 Review</div>
+    <div class="tab" data-tab="ranking"           onclick="switchTab('ranking')">🏆 Ranking</div>
+    <div class="tab" data-tab="breach"            onclick="switchTab('breach')">⚠️ Breach RCA</div>
+    <div class="tab" data-tab="compliance"        onclick="switchTab('compliance')">📋 Node Compliance</div>
+    <div class="tab" data-tab="callouts"          onclick="switchTab('callouts')">📢 Daily Callouts</div>
+    <div class="tab" data-tab="partner"           onclick="switchTab('partner')">🤝 Partner</div>
+    <div class="tab" data-tab="rlh"               onclick="switchTab('rlh')">🚚 RLH</div>
+    <div class="tab" data-tab="nlh"               onclick="switchTab('nlh')">🚛 NLH</div>
+    <div class="tab" data-tab="cod"               onclick="switchTab('cod')">💰 COD</div>
+    <div class="tab" data-tab="pva"               onclick="switchTab('pva')">📈 PVA</div>
+    <div class="tab" data-tab="dod"               onclick="switchTab('dod')">📅 DOD</div>
+    <div class="tab admin-only" data-tab="admin"  onclick="switchTab('admin')" style="display:none">⚙️ Admin</div>
+  </nav>
+
+  <div class="content">
+    <section class="module active" id="m-dashboard"></section>
+    <section class="module" id="m-review"></section>
+    <section class="module" id="m-ranking"></section>
+    <section class="module" id="m-breach"></section>
+    <section class="module" id="m-compliance"></section>
+    <section class="module" id="m-callouts"></section>
+    <section class="module" id="m-partner"></section>
+    <section class="module" id="m-rlh"></section>
+    <section class="module" id="m-nlh"></section>
+    <section class="module" id="m-cod"></section>
+    <section class="module" id="m-pva"></section>
+    <section class="module" id="m-dod"></section>
+    <section class="module" id="m-admin"></section>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastHost"></div>
+<div class="loading-bar" id="loadingBar"></div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   1. CONFIGURATION
+   ─────────────────────────────────────────────────────────────────────
+   Replace these two values with your Supabase project credentials.
+   Find them in: Supabase Dashboard → Settings → API
+   ═══════════════════════════════════════════════════════════════════════ */
+const SUPABASE_URL  = window.NX_SUPABASE_URL  || 'https://ailjlamlcelmafegyayo.supabase.co';
+const SUPABASE_ANON = window.NX_SUPABASE_ANON || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpbGpsYW1sY2VsbWFmZWd5YXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDAwMzksImV4cCI6MjA5NjMxNjAzOX0.Oeb7vIwQK6Sjxih0f1kYu_IsZmKfT3N2f_5Yd96yYIU';
+let sb = null;
+const APP_VERSION = '1.0.0';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. FROZEN CONSTANTS (v35.4.2 — do NOT change)
+   ═══════════════════════════════════════════════════════════════════════ */
+const RCA_CATEGORIES = [
+  'MP Issue',
+  'Ops Miss / Delay Bagging / Delay Dispatch',
+  'NLH Issue · Late landing · Erratic landing',
+  'Tech Issue · Sync / TMS / Design / Mapping / log10',
+  'LH Spillover / Placement'
+];
+const FACILITY_TYPES = ['LM-SC','LM-CD','FM-SC','FM-CD','Gateway','Hybrid'];
+const DESIGNATIONS   = ['AM','CH','RH','ZH','superadmin'];
+const ROLES          = ['user','admin','super'];
+const RLH_FAILURE_REASONS    = ['Spillover','Delay Placement','Delay Departure - Ops Mess','Tech Issue / TMS Error'];
+const RLH_LH_REMARKS         = ['<40% Adhoc not Eligible','Placement Delay - Vendor','Vehicle Breakdown/Accident','Spillover','Spillover - Vehicle Size','Adhoc Placement Delay','Ops Failure/Manpower','TMS/Tech Issue'];
+const RLH_LANE_TYPES         = ['RLH','NLH'];
+const RLH_FULL_LANE_REASONS  = ['Delay Placement','Delay Departure - Ops Mess','Tech Issue / TMS Error'];
+const RLH_DC_PICK_REASONS    = ['Spillover'];
+const RLH_EXCEPTION_REASONS  = ['Spillover','Tech Issue / TMS Error'];
+const RLH_POSITIVE_EXCEPTIONS= ['Spillover','Delay Placement'];
+
+// DOD column zones (frozen Excel layout)
+const DOD_FORWARD_START = 11, DOD_FORWARD_END = 83;
+const DOD_SEPARATOR_COL = 84;
+const DOD_RTO_START = 85, DOD_RTO_END = 157;
+const DOD_FACILITY_COL = 10;
+const DOD_FROZEN_HEADER_ROWS = 5;
+
+const MODULE_TITLES = {
+  dashboard:'Dashboard', review:'Review', ranking:'Ranking',
+  breach:'Breach RCA', compliance:'Node Compliance', callouts:'Daily Callouts',
+  partner:'Partner Performance', rlh:'RLH', nlh:'NLH', cod:'COD',
+  pva:'PVA', dod:'DOD Performance', admin:'Admin Panel'
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. GLOBAL STATE
+   ═══════════════════════════════════════════════════════════════════════ */
+const State = {
+  user: null,
+  master: [],
+  compliance: [],
+  breachRCA: [],
+  callouts: [],
+  cod: [],
+  rlhCallouts: [],
+  rlhMaster: [],
+  pva: [],
+  nlh: [],
+  users: [],
+  dodIndex: [],
+  dodSheet: null,
+  dodColPrefs: null,
+  filters: { dateFrom:null, dateTo:null, month:null, zones:[], rhs:[], chs:[], zhs:[], types:[] },
+  audit: [],
+  activeTab: 'dashboard',
+  loginType: 'mobile',
+  _ms: {},
+  _sort: {},
+  _page: {},
+  _initialized: {},
+  _channels: []
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. UTILITY HELPERS
+   ═══════════════════════════════════════════════════════════════════════ */
+function S(v){ return String(v==null?'':v).trim(); }
+function N(v){ return typeof v==='number' ? v : (parseFloat(S(v))||0); }
+function NUM(v){ return Math.round(+v||0).toLocaleString('en-IN'); }
+function PCT(v){ const n=N(v); return n.toFixed(2)+'%'; }
+function norm(v){ return S(v).replace(/\s+/g,' ').toUpperCase(); }
+function nlc(v){ return S(v).replace(/\s+/g,' ').toLowerCase(); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uniq(arr){ const s={}; arr.forEach(x=>{ if(x!=null && x!=='') s[norm(x)]=S(x); }); return Object.keys(s).sort().map(k=>s[k]); }
+function $(id){ return document.getElementById(id); }
+function setEl(id, html){ const el=$(id); if(el) el.innerHTML = html; }
+function getEl(id){ const el=$(id); return el ? el.value : ''; }
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+// Date formatting — dd-mm-yyyy display, ISO yyyy-mm-dd storage
+function todayISO(){
+  const d=new Date();
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
+function fmtDate(iso){
+  if(!iso) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if(!m) return iso;
+  return m[3]+'-'+m[2]+'-'+m[1];
+}
+function parseAnyDate(v){
+  if(!v) return '';
+  if(v instanceof Date && !isNaN(v)) return v.getFullYear()+'-'+pad2(v.getMonth()+1)+'-'+pad2(v.getDate());
+  const s=S(v);
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const m=/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/.exec(s);
+  if(m){ const y=m[3].length===2?('20'+m[3]):m[3]; return y+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'); }
+  // Excel serial date
+  if(/^\d+(\.\d+)?$/.test(s)){
+    const n = parseFloat(s);
+    if(n>30000 && n<60000){
+      const d = new Date(Math.round((n - 25569) * 86400 * 1000));
+      return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+    }
+  }
+  const d=new Date(s);
+  if(!isNaN(d)) return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  return '';
+}
+function isoToMonth(iso){
+  if(!iso) return '';
+  const m=/^(\d{4})-(\d{2})/.exec(iso);
+  return m ? m[1]+'-'+m[2] : '';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. FROZEN BUSINESS LOGIC — copied verbatim from v35.4.2
+   Do NOT modify these functions.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// CD facility — bagging is N/A
+function isCDType(t){ return /^(FM|LM)-CD$/i.test(t||''); }
+function normalizeCDBagging(rec){ if(isCDType(rec.type)){ rec.bagging = 0; } return rec; }
+
+// Tier colour bands — 98 / 95 / 90 / <90
+function tierClass(v){
+  v = N(v);
+  if(v >= 98) return 'green';
+  if(v >= 95) return 'orange';
+  if(v >= 90) return 'yellow';
+  return 'red';
+}
+function tierColor(v){
+  v = N(v);
+  if(v >= 98) return 'var(--green)';
+  if(v >= 95) return 'var(--orange)';
+  if(v >= 90) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+// v32: <100% conn = breach
+function calcBreach(volume, connection){
+  const v = N(volume), c = N(connection);
+  if(c >= 100 || v <= 0) return 0;
+  return Math.round(v - (v * c / 100));
+}
+
+function isFail(r){
+  if(N(r.connection) < 100) return true;
+  if(isCDType(r.type)) return false;
+  return N(r.bagging) < 100;
+}
+
+function compKey(r){ return S(r.date) + '_' + norm(r.facility); }
+
+function getExcData(date, facility){
+  const fNorm = norm(facility), dStr = S(date);
+  const codQty = State.cod.filter(r => r.date===dStr && norm(r.facility)===fNorm)
+                         .reduce((s,r)=>s+N(r.cod_qty),0);
+  const rlhQty = State.rlhCallouts.filter(r =>
+    r.date===dStr && norm(r.facility)===fNorm &&
+    RLH_POSITIVE_EXCEPTIONS.indexOf(r.failure_reason)>=0
+  ).reduce((s,r)=>s+N(r.affected_qty),0);
+  const reasons = [];
+  if(codQty>0) reasons.push('COD: '+NUM(codQty));
+  if(rlhQty>0){
+    const types = State.rlhCallouts.filter(r =>
+      r.date===dStr && norm(r.facility)===fNorm &&
+      RLH_POSITIVE_EXCEPTIONS.indexOf(r.failure_reason)>=0
+    ).map(r=>r.failure_reason);
+    reasons.push('RLH ('+uniq(types).join('+')+': '+NUM(rlhQty)+')');
+  }
+  return {codQty, rlhQty, excQty: codQty+rlhQty, reasons};
+}
+
+function calcExcConn(r){
+  const vol = N(r.volume);
+  if(vol<=0) return N(r.connection);
+  const actualPct = N(r.connection);
+  const ontime = vol * actualPct / 100;
+  const exc = getExcData(r.date, r.facility);
+  let finalConnected = Math.min(vol, ontime + exc.excQty);
+  let excPct = finalConnected / vol * 100;
+  if(excPct < actualPct) excPct = actualPct;
+  if(excPct > 100) excPct = 100;
+  return +excPct.toFixed(2);
+}
+
+// v20 canonical aggregation — volume-weighted, Exc >= Actual invariant
+function aggCompliance(rows){
+  const days = {}, facs = {};
+  let totVol = 0, connectedVol = 0, excCount = 0;
+  let bagSum = 0, bagN = 0, breachQty = 0;
+  let failDays = 0, n = 0;
+  rows.forEach(r => {
+    days[r.date] = 1; facs[r.facility] = 1;
+    const vol = N(r.volume);
+    totVol += vol;
+    connectedVol += vol * N(r.connection) / 100;
+    const exc = getExcData(r.date, r.facility);
+    excCount += exc.excQty;
+    if(!isCDType(r.type)){ bagSum += N(r.bagging); bagN++; }
+    breachQty += calcBreach(r.volume, r.connection);
+    if(isFail(r)) failDays++;
+    n++;
+  });
+  let actualPct = totVol > 0 ? (connectedVol / totVol * 100) : 0;
+  const finalConnected = Math.min(totVol, connectedVol + excCount);
+  let excPct = totVol > 0 ? (finalConnected / totVol * 100) : 0;
+  if(excPct < actualPct) excPct = actualPct;
+  if(excPct > 100) excPct = 100;
+  if(actualPct > 100) actualPct = 100;
+  actualPct = Math.round(actualPct * 100) / 100;
+  excPct    = Math.round(excPct    * 100) / 100;
+  let avgBag = bagN ? Math.round((bagSum / bagN) * 100) / 100 : 0;
+  if(avgBag > 100) avgBag = 100;
+  const compPct = n > 0 ? Math.round(((n - failDays) / n * 100) * 100) / 100 : 0;
+  return {
+    totalDays: Object.keys(days).length, totalSC: Object.keys(facs).length,
+    records: n, totVol,
+    connectedVol: Math.round(connectedVol),
+    avgConn: actualPct, actualComp: actualPct,
+    excComp: excPct, excCount,
+    finalConnected: Math.round(finalConnected),
+    avgBag, breachQty, compPct
+  };
+}
+
+function isExcPass(r){ return calcExcConn(r) >= 98; }
+
+function normRec(rec){
+  ['facility','rh','ch','zh','zone','type','partner','origin','lane'].forEach(f=>{
+    if(rec[f]) rec[f] = norm(rec[f]);
+  });
+  return rec;
+}
+
+function findFacility(code){
+  const k=norm(code);
+  return State.master.find(m => norm(m.facility)===k);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. AUDIT (localStorage-only, per v30 policy)
+   ═══════════════════════════════════════════════════════════════════════ */
+function audit(action, module, detail){
+  try{
+    const entry = {
+      id: 'a_'+Date.now()+'_'+Math.floor(Math.random()*9999),
+      userId: State.user ? (State.user.mobile||State.user.email) : 'system',
+      username: State.user ? (State.user.name||State.user.email) : 'System',
+      role: State.user ? State.user.role : '-',
+      action, module, detail: detail||'',
+      timestamp: new Date().toLocaleString('en-IN'),
+      ts: Date.now()
+    };
+    State.audit.unshift(entry);
+    if(State.audit.length > 2000) State.audit = State.audit.slice(0, 2000);
+    try{ localStorage.setItem('nx_audit', JSON.stringify(State.audit.slice(0,1000))); }catch(e){}
+  }catch(e){ console.warn('[audit]', e.message); }
+}
+function loadAudit(){
+  try{ const raw = localStorage.getItem('nx_audit'); if(raw) State.audit = JSON.parse(raw)||[]; }catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. TOAST + LOADING + MODAL
+   ═══════════════════════════════════════════════════════════════════════ */
+function toast(msg, type){
+  const host = $('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(10px)'; el.style.transition='all .2s'; setTimeout(()=>el.remove(), 220); }, 2800);
+}
+let _loadingCount = 0;
+function loadingStart(){ _loadingCount++; $('loadingBar').classList.add('active'); }
+function loadingStop(){ _loadingCount--; if(_loadingCount<=0){ _loadingCount=0; $('loadingBar').classList.remove('active'); } }
+
+function modal(opts){
+  // opts: {title, body (HTML), actions: [{label, class, onclick}], size:'lg'|''}
+  const root = $('modalRoot');
+  const id = 'modal_'+Date.now();
+  const sizeClass = opts.size==='lg' ? 'lg' : '';
+  const actionsHtml = (opts.actions||[]).map((a,i)=>
+    `<button class="btn ${a.class||'btn-soft'}" data-action="${i}">${esc(a.label)}</button>`
+  ).join('');
+  root.insertAdjacentHTML('beforeend',
+    `<div class="modal-overlay show" id="${id}">
+       <div class="modal ${sizeClass}">
+         <div class="modal-header">
+           <div class="modal-title">${esc(opts.title||'')}</div>
+           <button class="modal-close" onclick="closeModal('${id}')">×</button>
+         </div>
+         <div class="modal-body">${opts.body||''}</div>
+         ${actionsHtml ? `<div class="modal-footer">${actionsHtml}</div>` : ''}
+       </div>
+     </div>`);
+  const modalEl = $(id);
+  (opts.actions||[]).forEach((a,i)=>{
+    const btn = modalEl.querySelector(`[data-action="${i}"]`);
+    if(btn) btn.onclick = ()=>{ if(a.onclick) a.onclick(modalEl); };
+  });
+  return modalEl;
+}
+function closeModal(id){ const el = $(id); if(el) el.remove(); }
+function closeAllModals(){ document.querySelectorAll('.modal-overlay').forEach(m=>m.remove()); }
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   8. SUPABASE CLIENT + API LAYER
+   ═══════════════════════════════════════════════════════════════════════ */
+function initSupabase(){
+  if(SUPABASE_URL==='YOUR_SUPABASE_URL_HERE' || SUPABASE_ANON==='YOUR_SUPABASE_ANON_KEY_HERE'){
+    console.warn('[NX] Supabase credentials not configured');
+    return false;
+  }
+  try{
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+    });
+    return true;
+  }catch(e){
+    console.error('[NX] Supabase init failed', e);
+    return false;
+  }
+}
+
+const API = {
+  async listAll(table, opts){
+    opts = opts || {};
+    if(!sb) return [];
+    let all = [], from = 0, size = 1000;
+    while(true){
+      let q = sb.from(table).select('*').range(from, from + size - 1);
+      if(opts.orderBy) q = q.order(opts.orderBy, { ascending: opts.ascending!==false });
+      const { data, error } = await q;
+      if(error){ console.error('[API.listAll]', table, error.message); break; }
+      all = all.concat(data||[]);
+      if(!data || data.length < size) break;
+      from += size;
+    }
+    return all;
+  },
+  async upsert(table, rec){
+    if(!sb) return { error: 'not_connected' };
+    const { data, error } = await sb.from(table).upsert(rec).select();
+    if(error) console.error('[API.upsert]', table, error.message);
+    return { data, error };
+  },
+  async insert(table, rec){
+    if(!sb) return { error: 'not_connected' };
+    const { data, error } = await sb.from(table).insert(rec).select();
+    if(error) console.error('[API.insert]', table, error.message);
+    return { data, error };
+  },
+  async update(table, id, patch, idCol){
+    if(!sb) return { error: 'not_connected' };
+    const { data, error } = await sb.from(table).update(patch).eq(idCol||'id', id).select();
+    if(error) console.error('[API.update]', table, error.message);
+    return { data, error };
+  },
+  async remove(table, id, idCol){
+    if(!sb) return { error: 'not_connected' };
+    const { error } = await sb.from(table).delete().eq(idCol||'id', id);
+    if(error) console.error('[API.remove]', table, error.message);
+    return { error };
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   9. AUTH + SESSION
+   ═══════════════════════════════════════════════════════════════════════ */
+function setLoginType(t){
+  State.loginType = t;
+  document.querySelectorAll('.login-tab').forEach(el=>{
+    el.classList.toggle('active', el.dataset.login===t);
+  });
+  $('loginIdLabel').textContent = t==='mobile' ? 'Mobile Number' : 'Email Address';
+  $('loginId').placeholder = t==='mobile' ? '8888888888' : 'name@nexusops360.com';
+  $('loginId').focus();
+}
+
+async function doLogin(){
+  const id = S(getEl('loginId'));
+  const pwd = S(getEl('loginPwd'));
+  const errBox = $('loginErr');
+  errBox.style.display = 'none';
+  if(!id || !pwd){ errBox.textContent = 'Please enter credentials.'; errBox.style.display='block'; return; }
+  if(!sb){ errBox.textContent = 'Application not connected. Check Supabase credentials in source.'; errBox.style.display='block'; return; }
+  const btn = $('loginBtn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try{
+    let email = id;
+    if(State.loginType==='mobile'){
+      // Look up email by mobile
+      const { data, error } = await sb.from('user_profiles').select('email,active').eq('mobile', id).maybeSingle();
+      if(error || !data){ throw new Error('User not found. Check mobile number.'); }
+      if(data.active===false){ throw new Error('Account deactivated. Contact administrator.'); }
+      email = data.email;
+    }
+    const { data: signin, error: signErr } = await sb.auth.signInWithPassword({ email, password: pwd });
+    if(signErr) throw new Error(signErr.message||'Invalid credentials.');
+    // Load profile
+    const { data: profile, error: profErr } = await sb.from('user_profiles').select('*').eq('id', signin.user.id).single();
+    if(profErr || !profile) throw new Error('Profile not found. Contact administrator.');
+    if(profile.active===false) throw new Error('Account deactivated.');
+    State.user = profile;
+    cacheUser(profile);
+    audit('login', 'auth', 'Signed in via '+State.loginType);
+    await afterLogin();
+  }catch(e){
+    errBox.textContent = e.message || 'Login failed.';
+    errBox.style.display='block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign In →';
+  }
+}
+
+function cacheUser(p){
+  try{ localStorage.setItem('nx_user_cache', JSON.stringify({id:p.id,name:p.name,email:p.email,mobile:p.mobile,role:p.role,zone:p.zone,ch:p.ch,locations:p.locations,ts:Date.now()})); }catch(e){}
+}
+function hydrateUserFromCache(){
+  try{
+    const raw = localStorage.getItem('nx_user_cache');
+    if(!raw) return null;
+    const p = JSON.parse(raw);
+    if(Date.now()-p.ts > 7*24*60*60*1000) return null;
+    return p;
+  }catch(e){ return null; }
+}
+
+async function doLogout(){
+  audit('logout','auth','');
+  try{ if(sb) await sb.auth.signOut(); }catch(e){}
+  try{ localStorage.removeItem('nx_user_cache'); }catch(e){}
+  State.user = null;
+  unsubscribeAllRealtime();
+  location.reload();
+}
+
+async function afterLogin(){
+  // Render user header
+  const u = State.user;
+  $('uAvatar').textContent = (u.name||u.email||'U').substring(0,2).toUpperCase();
+  $('uName').textContent = u.name || u.email;
+  $('uRole').textContent = u.role==='super' ? 'SUPERADMIN' : u.role.toUpperCase();
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    el.style.display = (u.role==='super') ? '' : 'none';
+  });
+  // Hide login, show app
+  $('loginScreen').style.display = 'none';
+  $('app').classList.add('ready');
+  // Load all data
+  await loadAllData();
+  // Initial render
+  buildGlobalFilterBars();
+  renderActiveModule();
+  // Realtime
+  subscribeRealtime();
+}
+
+async function tryRestoreSession(){
+  if(!sb) return false;
+  // Fast-boot from cache
+  const cached = hydrateUserFromCache();
+  if(cached){
+    // Optimistically render the shell from cache while we verify session
+    State.user = cached;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ State.user = null; return false; }
+  // Re-fetch fresh profile
+  const { data: profile, error } = await sb.from('user_profiles').select('*').eq('id', session.user.id).single();
+  if(error || !profile || profile.active===false){ State.user = null; return false; }
+  State.user = profile;
+  cacheUser(profile);
+  await afterLogin();
+  return true;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   10. DATA LOADING
+   ═══════════════════════════════════════════════════════════════════════ */
+async function loadAllData(){
+  loadingStart();
+  try{
+    const [master, compliance, breach, callouts, cod, rlhC, rlhM, pva, nlh, dodIdx] = await Promise.all([
+      API.listAll('master_facility', { orderBy:'facility' }),
+      API.listAll('compliance',      { orderBy:'date', ascending:false }),
+      API.listAll('breach_rca',      { orderBy:'date', ascending:false }),
+      API.listAll('callouts',        { orderBy:'date', ascending:false }),
+      API.listAll('cod_data',        { orderBy:'date', ascending:false }),
+      API.listAll('rlh_callouts',    { orderBy:'date', ascending:false }),
+      API.listAll('rlh_master',      { orderBy:'lane' }),
+      API.listAll('pva_records',     { orderBy:'date', ascending:false }),
+      API.listAll('nlh_tracker',     { orderBy:'date', ascending:false }),
+      API.listAll('dod_uploads',     { orderBy:'report_date', ascending:false })
+    ]);
+    State.master = master; State.compliance = compliance; State.breachRCA = breach;
+    State.callouts = callouts; State.cod = cod; State.rlhCallouts = rlhC;
+    State.rlhMaster = rlhM; State.pva = pva; State.nlh = nlh;
+    State.dodIndex = dodIdx.map(d=>({ report_date:d.report_date, file_name:d.file_name, total_rows:d.total_rows, total_cols:d.total_cols, uploaded_at:d.uploaded_at }));
+    // Users only loaded for super
+    if(State.user && State.user.role==='super'){
+      State.users = await API.listAll('user_profiles', { orderBy:'name' });
+    }
+  }catch(e){
+    console.error('[loadAllData]', e);
+    toast('Failed to load some data: '+(e.message||''), 'error');
+  }finally{ loadingStop(); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   11. REALTIME
+   ═══════════════════════════════════════════════════════════════════════ */
+function subscribeRealtime(){
+  if(!sb) return;
+  unsubscribeAllRealtime();
+  const tables = ['compliance','breach_rca','callouts','cod_data','rlh_callouts','master_facility','dod_uploads'];
+  tables.forEach(table=>{
+    const ch = sb.channel('rt:'+table).on('postgres_changes', { event:'*', schema:'public', table }, (payload)=>{
+      onRealtimeEvent(table, payload);
+    }).subscribe();
+    State._channels.push(ch);
+  });
+}
+function unsubscribeAllRealtime(){
+  if(!sb) return;
+  State._channels.forEach(ch=>{ try{ sb.removeChannel(ch); }catch(e){} });
+  State._channels = [];
+}
+function onRealtimeEvent(table, payload){
+  const stateKey = { compliance:'compliance', breach_rca:'breachRCA', callouts:'callouts', cod_data:'cod', rlh_callouts:'rlhCallouts', master_facility:'master', dod_uploads:'dodIndex' }[table];
+  if(!stateKey) return;
+  const arr = State[stateKey];
+  const idField = (table==='dod_uploads') ? 'report_date' : 'id';
+  if(payload.eventType==='INSERT'){
+    if(!arr.find(x=>x[idField]===payload.new[idField])) arr.unshift(payload.new);
+  } else if(payload.eventType==='UPDATE'){
+    const i = arr.findIndex(x=>x[idField]===payload.new[idField]);
+    if(i>=0) arr[i] = payload.new; else arr.unshift(payload.new);
+  } else if(payload.eventType==='DELETE'){
+    const i = arr.findIndex(x=>x[idField]===payload.old[idField]);
+    if(i>=0) arr.splice(i,1);
+  }
+  // Re-render current tab if affected
+  renderActiveModule();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   12. CLOCK
+   ═══════════════════════════════════════════════════════════════════════ */
+function tickClock(){
+  const d = new Date();
+  $('clock').textContent = pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())+' · '+fmtDate(todayISO());
+}
+setInterval(tickClock, 1000);
+
+/* ═══════════════════════════════════════════════════════════════════════
+   13. MULTI-SELECT COMPONENT
+   ═══════════════════════════════════════════════════════════════════════ */
+function msBuild(id, opts, placeholder){
+  State._ms[id] = State._ms[id] || [];
+  const sel = State._ms[id];
+  const cnt = sel.length;
+  return `<div class="ms ${cnt?'open-state':''}" id="${id}" data-opts='${JSON.stringify(opts)}'>
+    <button class="ms-trigger ${cnt?'has-value':''}" onclick="msToggle('${id}',event)">
+      <span class="ms-label">${cnt ? (cnt===1?sel[0]:cnt+' selected') : (placeholder||'All')}</span>
+      ${cnt ? `<span class="ms-count">${cnt}</span>` : ''}
+      <span class="ms-caret">▼</span>
+    </button>
+    <div class="ms-panel">
+      <div class="ms-search"><input type="text" placeholder="Search…" oninput="msFilter('${id}', this.value)"/></div>
+      <div class="ms-actions">
+        <button onclick="msAll('${id}')">Select All</button>
+        <button onclick="msClear('${id}')">Clear</button>
+      </div>
+      <div class="ms-list">${msRenderItems(id, opts, '')}</div>
+    </div>
+  </div>`;
+}
+function msRenderItems(id, opts, search){
+  const sel = State._ms[id]||[];
+  const q = (search||'').toLowerCase();
+  const filtered = q ? opts.filter(o=>String(o).toLowerCase().includes(q)) : opts;
+  if(!filtered.length) return '<div class="ms-item empty">No matches</div>';
+  return filtered.map(o=>{
+    const checked = sel.indexOf(o)>=0 ? 'checked' : '';
+    return `<label class="ms-item"><input type="checkbox" ${checked} onclick="msToggleItem('${id}','${esc(o).replace(/'/g,"\\'")}')"/>${esc(o)}</label>`;
+  }).join('');
+}
+function msFilter(id, search){
+  const el = $(id); if(!el) return;
+  const opts = JSON.parse(el.getAttribute('data-opts')||'[]');
+  el.querySelector('.ms-list').innerHTML = msRenderItems(id, opts, search);
+}
+function msToggle(id, ev){
+  if(ev) ev.stopPropagation();
+  document.querySelectorAll('.ms.open').forEach(el=>{ if(el.id!==id) el.classList.remove('open'); });
+  $(id).classList.toggle('open');
+}
+function msToggleItem(id, val){
+  const sel = State._ms[id] = State._ms[id]||[];
+  const i = sel.indexOf(val);
+  if(i>=0) sel.splice(i,1); else sel.push(val);
+  msUpdateTrigger(id);
+}
+function msAll(id){
+  const el = $(id); if(!el) return;
+  const opts = JSON.parse(el.getAttribute('data-opts')||'[]');
+  State._ms[id] = opts.slice();
+  msFilter(id, el.querySelector('.ms-search input').value);
+  msUpdateTrigger(id);
+}
+function msClear(id){
+  State._ms[id] = [];
+  const el = $(id); if(!el) return;
+  msFilter(id, el.querySelector('.ms-search input').value);
+  msUpdateTrigger(id);
+}
+function msUpdateTrigger(id){
+  const el = $(id); if(!el) return;
+  const trig = el.querySelector('.ms-trigger');
+  const sel = State._ms[id]||[];
+  const cnt = sel.length;
+  trig.classList.toggle('has-value', cnt>0);
+  trig.querySelector('.ms-label').textContent = cnt ? (cnt===1?sel[0]:cnt+' selected') : (trig.getAttribute('data-placeholder')||'All');
+  const countEl = trig.querySelector('.ms-count');
+  if(cnt && !countEl) trig.insertBefore(Object.assign(document.createElement('span'),{className:'ms-count',textContent:cnt}), trig.querySelector('.ms-caret'));
+  else if(!cnt && countEl) countEl.remove();
+  else if(countEl) countEl.textContent = cnt;
+}
+function getMS(id){ return State._ms[id]||[]; }
+function resetMS(id){ State._ms[id]=[]; msUpdateTrigger(id); }
+
+// Close ms on outside click
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.ms')) document.querySelectorAll('.ms.open').forEach(el=>el.classList.remove('open'));
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   14. GLOBAL FILTER BAR
+   ═══════════════════════════════════════════════════════════════════════ */
+function buildGlobalFilterBars(){
+  // Each module that uses the global filter calls buildFilterBar(containerId, prefix)
+  // Implementation lives in the module renderers
+}
+
+function applyGlobalFilters(prefix, rows){
+  // prefix is the filter scope (d=dash, c=comp, r=rank, etc) — we use one global scope 'g'
+  const dateFrom = getEl(prefix+'_dateFrom');
+  const dateTo   = getEl(prefix+'_dateTo');
+  const monthSel = getEl(prefix+'_month');
+  const zones    = getMS(prefix+'_zones');
+  const rhs      = getMS(prefix+'_rhs');
+  const chs      = getMS(prefix+'_chs');
+  const zhs      = getMS(prefix+'_zhs');
+  const types    = getMS(prefix+'_types');
+
+  return rows.filter(r=>{
+    if(monthSel && isoToMonth(r.date)!==monthSel) return false;
+    if(dateFrom && r.date < dateFrom) return false;
+    if(dateTo && r.date > dateTo) return false;
+    // Resolve zone/rh/ch via master if not on record
+    let zone=r.zone, rh=r.rh, ch=r.ch, zh=r.zh, type=r.type;
+    if(!zone || !rh || !ch || !zh || !type){
+      const f = findFacility(r.facility);
+      if(f){ zone=zone||f.zone; rh=rh||f.rh; ch=ch||f.ch; zh=zh||f.zh; type=type||f.facility_type; }
+    }
+    if(zones.length && zones.indexOf(zone)<0) return false;
+    if(rhs.length && rhs.indexOf(rh)<0) return false;
+    if(chs.length && chs.indexOf(ch)<0) return false;
+    if(zhs.length && zhs.indexOf(zh)<0) return false;
+    if(types.length && types.indexOf(type)<0) return false;
+    return true;
+  });
+}
+
+function buildFilterBar(containerId, prefix, onApply){
+  const c = $(containerId); if(!c) return;
+  const zones = uniq(State.master.map(m=>m.zone).concat(State.compliance.map(r=>r.zone)));
+  const rhs   = uniq(State.master.map(m=>m.rh).concat(State.compliance.map(r=>r.rh)));
+  const chs   = uniq(State.master.map(m=>m.ch).concat(State.compliance.map(r=>r.ch)));
+  const zhs   = uniq(State.master.map(m=>m.zh).concat(State.compliance.map(r=>r.zh)));
+  const types = FACILITY_TYPES.slice();
+  // Months derived from compliance dates
+  const months = uniq(State.compliance.map(r=>isoToMonth(r.date)));
+  c.innerHTML = `<div class="filter-bar">
+    <span class="filter-label">Date From</span>
+    <input type="date" class="filter-input" id="${prefix}_dateFrom"/>
+    <span class="filter-label">Date To</span>
+    <input type="date" class="filter-input" id="${prefix}_dateTo"/>
+    <span class="filter-label">Month</span>
+    <select class="filter-input" id="${prefix}_month"><option value="">All</option>${months.map(m=>`<option value="${m}">${m}</option>`).join('')}</select>
+    <span class="filter-label">Zone</span>${msBuild(prefix+'_zones', zones, 'All Zones')}
+    <span class="filter-label">RH</span>${msBuild(prefix+'_rhs', rhs, 'All RH')}
+    <span class="filter-label">CH</span>${msBuild(prefix+'_chs', chs, 'All CH')}
+    <span class="filter-label">ZH</span>${msBuild(prefix+'_zhs', zhs, 'All ZH')}
+    <span class="filter-label">Type</span>${msBuild(prefix+'_types', types, 'All Types')}
+    <button class="filter-apply" onclick="(${onApply.toString()})()">Apply</button>
+    <button class="filter-reset" onclick="resetFilters('${prefix}'); (${onApply.toString()})()">Reset</button>
+  </div>`;
+}
+function resetFilters(prefix){
+  ['_dateFrom','_dateTo','_month'].forEach(s=>{ const el=$(prefix+s); if(el) el.value=''; });
+  ['_zones','_rhs','_chs','_zhs','_types'].forEach(s=>resetMS(prefix+s));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   15. SORTABLE TABLE HELPER
+   ═══════════════════════════════════════════════════════════════════════ */
+function sortRows(prefix, rows, getters){
+  const s = State._sort[prefix];
+  if(!s || !s.col) return rows;
+  const g = getters[s.col];
+  if(!g) return rows;
+  const sorted = rows.slice().sort((a,b)=>{
+    const va = g(a), vb = g(b);
+    if(typeof va==='number' && typeof vb==='number') return s.dir==='asc' ? va-vb : vb-va;
+    return s.dir==='asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  return sorted;
+}
+function sortToggle(prefix, col, rerenderFn){
+  const cur = State._sort[prefix]||{};
+  let dir = 'asc';
+  if(cur.col===col && cur.dir==='asc') dir='desc';
+  else if(cur.col===col && cur.dir==='desc') dir='';
+  State._sort[prefix] = dir ? { col, dir } : { col:'', dir:'' };
+  if(rerenderFn) rerenderFn();
+}
+function sortInd(prefix, col){
+  const s = State._sort[prefix]||{};
+  if(s.col!==col) return '';
+  return `<span class="sort-ind">${s.dir==='asc'?'▲':'▼'}</span>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   16. EXPORT TO XLSX
+   ═══════════════════════════════════════════════════════════════════════ */
+function exportXLSX(rows, headers, filename){
+  if(!rows || !rows.length){ toast('No data to export', 'warn'); return; }
+  const wsData = [headers].concat(rows);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, filename + '_' + todayISO() + '.xlsx');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   17. TAB SWITCHING
+   ═══════════════════════════════════════════════════════════════════════ */
+function switchTab(name){
+  State.activeTab = name;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.module').forEach(m=>m.classList.toggle('active', m.id==='m-'+name));
+  $('moduleTitle').textContent = MODULE_TITLES[name] || name;
+  renderActiveModule();
+}
+
+function renderActiveModule(){
+  const name = State.activeTab;
+  const renderers = {
+    dashboard:  renderDashboard,
+    review:     renderReview,
+    ranking:    renderRanking,
+    breach:     renderBreach,
+    compliance: renderCompliance,
+    callouts:   renderCallouts,
+    partner:    renderPartner,
+    rlh:        renderRLH,
+    nlh:        renderNLH,
+    cod:        renderCOD,
+    pva:        renderPVA,
+    dod:        renderDOD,
+    admin:      renderAdmin
+  };
+  const fn = renderers[name];
+  if(fn) try{ fn(); }catch(e){ console.error('[render '+name+']', e); $('m-'+name).innerHTML='<div class="banner error">Render error: '+esc(e.message)+'</div>'; }
+}
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   18. DASHBOARD MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderDashboard(){
+  const root = $('m-dashboard');
+  root.innerHTML = `
+    <div id="dash_filter"></div>
+    <div id="dash_kpis"></div>
+    <div class="card"><div class="card-header"><div class="card-title">Type-wise Summary</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="dash_typeTbl"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">CH-wise Summary</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="dash_chTbl"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Top 10 Compliance</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="dashExportTop()">Export</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="dash_topTbl"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Bottom 10 Compliance</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="dash_botTbl"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Top Offenders (Highest Breach Qty)</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="dash_offTbl"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Achievement Bands</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="dash_bandsTbl"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">AI Suggestions</div></div><div class="card-body" id="dash_ai"></div></div>
+  `;
+  buildFilterBar('dash_filter', 'dg', renderDashboardData);
+  renderDashboardData();
+}
+function renderDashboardData(){
+  const rows = applyGlobalFilters('dg', State.compliance);
+  const agg = aggCompliance(rows);
+  // KPIs
+  setEl('dash_kpis', `<div class="grid-stats">
+    <div class="kpi-card"><div class="kpi-label">Total Volume</div><div class="kpi-value">${NUM(agg.totVol)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Compliance</div><div class="kpi-value ${tierClass(agg.actualComp)}">${PCT(agg.actualComp)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">⭐ Exc.Compliance</div><div class="kpi-value ${tierClass(agg.excComp)}">${PCT(agg.excComp)}</div><div class="kpi-sub">Includes ${NUM(agg.excCount)} exception qty</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Bagging</div><div class="kpi-value ${tierClass(agg.avgBag)}">${PCT(agg.avgBag)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Records</div><div class="kpi-value">${NUM(agg.records)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Breach Qty</div><div class="kpi-value red">${NUM(agg.breachQty)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Facilities</div><div class="kpi-value">${NUM(agg.totalSC)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Days</div><div class="kpi-value">${NUM(agg.totalDays)}</div></div>
+  </div>`);
+
+  // Type-wise
+  const byType = {};
+  rows.forEach(r=>{ const k=r.type||'—'; (byType[k]=byType[k]||[]).push(r); });
+  const typeRows = Object.keys(byType).sort().map(k=>{
+    const a = aggCompliance(byType[k]);
+    return `<tr><td><b>${esc(k)}</b></td><td class="num">${NUM(a.records)}</td><td class="num"><span class="chip ${tierClass(a.actualComp)}">${PCT(a.actualComp)}</span></td><td class="num"><span class="chip ${tierClass(a.excComp)}">${PCT(a.excComp)}</span></td><td class="num">${PCT(a.avgConn)}</td><td class="num">${PCT(a.avgBag)}</td><td class="num red">${NUM(a.breachQty)}</td><td class="num">${NUM(a.totVol)}</td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('dash_typeTbl', `<table class="dt"><thead><tr><th class="no-sort">Type</th><th class="no-sort">Records</th><th class="no-sort">Actual Comp%</th><th class="no-sort">⭐ Exc.Comp%</th><th class="no-sort">Avg Conn</th><th class="no-sort">Avg Bag</th><th class="no-sort">Breach Qty</th><th class="no-sort">Volume</th></tr></thead><tbody>${typeRows}</tbody></table>`);
+
+  // CH-wise
+  const byCH = {};
+  rows.forEach(r=>{
+    let ch = r.ch || (findFacility(r.facility)||{}).ch || '—';
+    (byCH[ch]=byCH[ch]||[]).push(r);
+  });
+  const chRows = Object.keys(byCH).sort().map((k,i)=>{
+    const a = aggCompliance(byCH[k]);
+    return `<tr><td class="num">${i+1}</td><td><b>${esc(k)}</b></td><td class="num">${a.totalSC}</td><td class="num">${NUM(a.records)}</td><td class="num"><span class="chip ${tierClass(a.actualComp)}">${PCT(a.actualComp)}</span></td><td class="num"><span class="chip ${tierClass(a.excComp)}">${PCT(a.excComp)}</span></td><td class="num red">${NUM(a.breachQty)}</td><td class="num">${NUM(a.totVol)}</td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('dash_chTbl', `<table class="dt"><thead><tr><th class="no-sort">#</th><th class="no-sort">Cluster Head</th><th class="no-sort">Facilities</th><th class="no-sort">Records</th><th class="no-sort">Actual Comp%</th><th class="no-sort">⭐Exc.Comp%</th><th class="no-sort">Breach Qty</th><th class="no-sort">Volume</th></tr></thead><tbody>${chRows}</tbody></table>`);
+
+  // Per-facility aggregation for top/bottom
+  const byFac = {};
+  rows.forEach(r=>{ (byFac[r.facility]=byFac[r.facility]||[]).push(r); });
+  const facStats = Object.keys(byFac).map(f=>{
+    const a = aggCompliance(byFac[f]);
+    return { facility:f, ...a, rh:(byFac[f][0].rh||'') };
+  });
+  const top = facStats.slice().sort((a,b)=>b.actualComp-a.actualComp).slice(0,10);
+  const bot = facStats.slice().sort((a,b)=>b.breachQty-a.breachQty).slice(0,10);
+  const topRowsH = top.map((r,i)=>`<tr><td class="num">${i+1}</td><td>${esc(r.facility)}</td><td>${esc(r.rh)}</td><td class="num"><span class="chip ${tierClass(r.actualComp)}">${PCT(r.actualComp)}</span></td><td class="num">${PCT(r.avgBag)}</td><td class="num">${NUM(r.totVol)}</td></tr>`).join('') || '<tr><td colspan="6" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  const botRowsH = bot.map((r,i)=>`<tr><td class="num">${i+1}</td><td>${esc(r.facility)}</td><td>${esc(r.rh)}</td><td class="num"><span class="chip ${tierClass(r.actualComp)}">${PCT(r.actualComp)}</span></td><td class="num">${PCT(r.avgBag)}</td><td class="num red">${NUM(r.breachQty)}</td></tr>`).join('') || '<tr><td colspan="6" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('dash_topTbl', `<table class="dt"><thead><tr><th class="no-sort">#</th><th class="no-sort">Facility</th><th class="no-sort">RH</th><th class="no-sort">Conn%</th><th class="no-sort">Bag%</th><th class="no-sort">Volume</th></tr></thead><tbody>${topRowsH}</tbody></table>`);
+  setEl('dash_botTbl', `<table class="dt"><thead><tr><th class="no-sort">#</th><th class="no-sort">Facility</th><th class="no-sort">RH</th><th class="no-sort">Conn%</th><th class="no-sort">Bag%</th><th class="no-sort">Breach Qty</th></tr></thead><tbody>${botRowsH}</tbody></table>`);
+
+  // Top offenders
+  const offenders = rows.filter(r=>calcBreach(r.volume,r.connection)>0).sort((a,b)=>calcBreach(b.volume,b.connection)-calcBreach(a.volume,a.connection)).slice(0,15);
+  const offRows = offenders.map((r,i)=>`<tr><td class="num">${i+1}</td><td>${fmtDate(r.date)}</td><td>${esc(r.facility)}</td><td>${esc(r.type||'')}</td><td>${esc(r.partner||'')}</td><td>${esc(r.rh||'')}</td><td class="num">${NUM(r.volume)}</td><td class="num"><span class="chip ${tierClass(r.connection)}">${PCT(r.connection)}</span></td><td class="num red">${NUM(calcBreach(r.volume,r.connection))}</td></tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No breaches in scope 🎉</td></tr>';
+  setEl('dash_offTbl', `<table class="dt"><thead><tr><th class="no-sort">#</th><th class="no-sort">Date</th><th class="no-sort">Facility</th><th class="no-sort">Type</th><th class="no-sort">Partner</th><th class="no-sort">RH</th><th class="no-sort">Volume</th><th class="no-sort">Conn%</th><th class="no-sort">Breach Qty</th></tr></thead><tbody>${offRows}</tbody></table>`);
+
+  // Achievement bands
+  const bands = facStats.map(s=>{
+    const recs = byFac[s.facility];
+    let g=0,o=0,y=0,r=0;
+    recs.forEach(x=>{
+      const c = N(x.connection);
+      if(c>=98) g++; else if(c>=95) o++; else if(c>=90) y++; else r++;
+    });
+    const total = recs.length;
+    return { facility:s.facility, rh:recs[0].rh||'', ch:recs[0].ch||'', g, o, y, r, total, greenPct: total?g/total*100:0 };
+  }).sort((a,b)=>b.greenPct-a.greenPct);
+  const bandsH = bands.slice(0,30).map(b=>`<tr><td>${esc(b.facility)}</td><td>${esc(b.rh)}</td><td>${esc(b.ch)}</td><td class="num"><span class="chip green">${b.g}</span></td><td class="num"><span class="chip orange">${b.o}</span></td><td class="num"><span class="chip yellow">${b.y}</span></td><td class="num"><span class="chip red">${b.r}</span></td><td class="num">${b.total}</td><td class="num"><span class="chip ${tierClass(b.greenPct)}">${b.greenPct.toFixed(1)}%</span></td></tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('dash_bandsTbl', `<table class="dt"><thead><tr><th class="no-sort">Facility</th><th class="no-sort">RH</th><th class="no-sort">CH</th><th class="no-sort">🟢 98-100%</th><th class="no-sort">🟠 95-97.99%</th><th class="no-sort">🟡 90-94.99%</th><th class="no-sort">🔴 &lt;90%</th><th class="no-sort">Total</th><th class="no-sort">Green %</th></tr></thead><tbody>${bandsH}</tbody></table>`);
+
+  // AI suggestions
+  const ai = [];
+  facStats.filter(s=>s.actualComp<90).slice(0,3).forEach(s=>ai.push(`<div class="banner warn">⚠️ <b>${esc(s.facility)}</b> compliance ${PCT(s.actualComp)} — schedule on-ground audit.</div>`));
+  // RCA category concentration
+  const rcaTotal = State.breachRCA.length;
+  if(rcaTotal>10){
+    const cat = {};
+    State.breachRCA.forEach(b=>cat[b.category]=(cat[b.category]||0)+1);
+    const sorted = Object.keys(cat).sort((a,b)=>cat[b]-cat[a]);
+    if(sorted.length){
+      const pct = cat[sorted[0]]/rcaTotal*100;
+      if(pct>30) ai.push(`<div class="banner info">💡 <b>${esc(sorted[0])}</b> accounts for ${pct.toFixed(0)}% of RCA — root-cause workshop recommended.</div>`);
+    }
+  }
+  setEl('dash_ai', ai.length?ai.join(''):'<div class="empty-state"><div class="em-icon">🎯</div><h3>All clear</h3><p>No anomalies detected in the current scope.</p></div>');
+}
+function dashExportTop(){
+  const rows = applyGlobalFilters('dg', State.compliance);
+  const byFac = {};
+  rows.forEach(r=>{ (byFac[r.facility]=byFac[r.facility]||[]).push(r); });
+  const out = Object.keys(byFac).map(f=>{
+    const a = aggCompliance(byFac[f]);
+    return [f, byFac[f][0].rh||'', byFac[f][0].ch||'', a.records, a.totVol, a.actualComp, a.excComp, a.avgBag, a.breachQty];
+  });
+  exportXLSX(out, ['Facility','RH','CH','Records','Volume','Actual Comp%','Exc.Comp%','Avg Bag%','Breach Qty'], 'dashboard');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   19. NODE COMPLIANCE MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderCompliance(){
+  const root = $('m-compliance');
+  root.innerHTML = `
+    <div id="comp_filter"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Compliance Records</div>
+        <div class="card-actions">
+          <button class="btn btn-soft btn-sm" onclick="compShowPaste()">Quick Paste</button>
+          <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload XLSX
+            <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="compBulkUpload(this)"/></label>
+          <button class="btn btn-soft btn-sm" onclick="compDownloadTemplate()">Template</button>
+          <button class="btn btn-soft btn-sm" onclick="compExport()">Export</button>
+          <button class="btn btn-primary btn-sm" onclick="compEdit(null)">+ Add Record</button>
+        </div>
+      </div>
+      <div class="card-body no-pad"><div class="tbl-wrap" id="comp_tbl"></div><div id="comp_pgn"></div></div>
+    </div>
+  `;
+  buildFilterBar('comp_filter', 'cg', renderComplianceTable);
+  renderComplianceTable();
+}
+function renderComplianceTable(){
+  const rows = applyGlobalFilters('cg', State.compliance);
+  // Sort
+  const sorted = sortRows('comp', rows, {
+    date:r=>r.date, facility:r=>r.facility, type:r=>r.type,
+    volume:r=>N(r.volume), connection:r=>N(r.connection), bagging:r=>N(r.bagging),
+    breach:r=>calcBreach(r.volume,r.connection), excComp:r=>calcExcConn(r)
+  });
+  // Paginate
+  State._page.comp = State._page.comp || { p:1, sz:50 };
+  const pg = State._page.comp;
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total/pg.sz));
+  if(pg.p > totalPages) pg.p = totalPages;
+  const start = (pg.p-1)*pg.sz, end = Math.min(start+pg.sz, total);
+  const slice = sorted.slice(start, end);
+  const sh = c=>`onclick="sortToggle('comp','${c}',renderComplianceTable)"`;
+  const head = `<thead><tr>
+    <th ${sh('date')}>Date${sortInd('comp','date')}</th>
+    <th ${sh('facility')}>Facility${sortInd('comp','facility')}</th>
+    <th ${sh('type')}>Type${sortInd('comp','type')}</th>
+    <th class="no-sort">Partner</th>
+    <th class="no-sort">RH</th>
+    <th ${sh('volume')}>Volume${sortInd('comp','volume')}</th>
+    <th ${sh('connection')}>Conn%${sortInd('comp','connection')}</th>
+    <th ${sh('bagging')}>Bag%${sortInd('comp','bagging')}</th>
+    <th ${sh('excComp')}>⭐Exc.Conn%${sortInd('comp','excComp')}</th>
+    <th ${sh('breach')}>Breach${sortInd('comp','breach')}</th>
+    <th class="no-sort">Action</th>
+  </tr></thead>`;
+  const body = slice.map(r=>{
+    const ex = calcExcConn(r);
+    return `<tr>
+      <td class="small">${fmtDate(r.date)}</td>
+      <td><b>${esc(r.facility)}</b></td>
+      <td>${esc(r.type||'')}</td>
+      <td class="small">${esc(r.partner||'')}</td>
+      <td class="small">${esc(r.rh||'')}</td>
+      <td class="num">${NUM(r.volume)}</td>
+      <td class="num"><span class="chip ${tierClass(r.connection)}">${PCT(r.connection)}</span></td>
+      <td class="num">${isCDType(r.type)?'<span class="tag">N/A</span>':'<span class="chip '+tierClass(r.bagging)+'">'+PCT(r.bagging)+'</span>'}</td>
+      <td class="num">${ex>N(r.connection)?'<span class="chip cyan">'+PCT(ex)+'</span>':PCT(ex)}</td>
+      <td class="num red">${NUM(calcBreach(r.volume,r.connection))}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="compEdit('${esc(r.id)}')">✎</button>${State.user.role!=='user'?'<button class="btn btn-ghost btn-sm" onclick="compDelete(\''+esc(r.id)+'\')">🗑</button>':''}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="11" class="center" style="padding:20px;color:var(--t3)">No records</td></tr>';
+  setEl('comp_tbl', `<table class="dt">${head}<tbody>${body}</tbody></table>`);
+  setEl('comp_pgn', `<div class="pagination"><span>${start+1}–${end} of ${total}</span><button onclick="compPage(-1)" ${pg.p<=1?'disabled':''}>← Prev</button><span>Page ${pg.p} of ${totalPages}</span><button onclick="compPage(1)" ${pg.p>=totalPages?'disabled':''}>Next →</button></div>`);
+}
+function compPage(d){ State._page.comp.p += d; renderComplianceTable(); }
+function compEdit(id){
+  const r = id ? State.compliance.find(x=>x.id===id) : { date: todayISO(), facility:'', type:'LM-SC', partner:'', volume:0, connection:100, bagging:100, matured:0 };
+  if(!r){ toast('Record not found','error'); return; }
+  const facOpts = State.master.map(m=>`<option value="${esc(m.facility)}" ${norm(m.facility)===norm(r.facility)?'selected':''}>${esc(m.facility)} (${esc(m.facility_type)})</option>`).join('');
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Date</label><input type="date" id="cm_date" value="${esc(r.date)}"/></div>
+    <div class="field required"><label>Facility</label><select id="cm_facility" onchange="compAutoFill()"><option value="">— Select —</option>${facOpts}</select></div>
+    <div class="field required"><label>Type</label><select id="cm_type">${FACILITY_TYPES.map(t=>`<option ${t===r.type?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label>Partner</label><input id="cm_partner" value="${esc(r.partner||'')}"/></div>
+    <div class="field required"><label>Volume</label><input type="number" id="cm_volume" value="${N(r.volume)}" min="0"/></div>
+    <div class="field"><label>Matured</label><input type="number" id="cm_matured" value="${N(r.matured)}" min="0"/></div>
+    <div class="field required"><label>Connection %</label><input type="number" id="cm_connection" value="${N(r.connection)}" min="0" max="100" step="0.01"/></div>
+    <div class="field"><label>Bagging % <small style="color:var(--t3)">(N/A for CD)</small></label><input type="number" id="cm_bagging" value="${N(r.bagging)}" min="0" max="100" step="0.01"/></div>
+  </div>`;
+  modal({ title: (id?'Edit':'Add') + ' Compliance Record', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>compSave(id, m) }
+  ]});
+}
+function compAutoFill(){
+  const code = getEl('cm_facility');
+  const f = findFacility(code);
+  if(f){
+    $('cm_type').value = f.facility_type;
+    $('cm_partner').value = f.partner||'';
+    if(isCDType(f.facility_type)) $('cm_bagging').value = 0;
+  }
+}
+async function compSave(id, modalEl){
+  const facCode = S(getEl('cm_facility'));
+  if(!facCode){ toast('Pick a facility','error'); return; }
+  const rec = {
+    date: parseAnyDate(getEl('cm_date')),
+    facility: norm(facCode),
+    type: getEl('cm_type'),
+    partner: S(getEl('cm_partner')),
+    volume: N(getEl('cm_volume')),
+    matured: N(getEl('cm_matured')),
+    connection: N(getEl('cm_connection')),
+    bagging: N(getEl('cm_bagging'))
+  };
+  normalizeCDBagging(rec);
+  rec.id = compKey(rec);
+  // Enrich from master
+  const f = findFacility(rec.facility);
+  if(f){ rec.zone=f.zone; rec.rh=f.rh; rec.ch=f.ch; rec.zh=f.zh; if(!rec.partner) rec.partner=f.partner; }
+  rec.updated_by = State.user.id;
+  rec.updated_at = new Date().toISOString();
+  if(!id) rec.created_by = State.user.id;
+  loadingStart();
+  const { error } = await API.upsert('compliance', rec);
+  loadingStop();
+  if(error){ toast('Save failed: '+error.message,'error'); return; }
+  // Update local state immediately
+  const idx = State.compliance.findIndex(x=>x.id===rec.id);
+  if(idx>=0) State.compliance[idx] = rec; else State.compliance.unshift(rec);
+  audit(id?'update':'create','compliance', rec.facility+' · '+rec.date);
+  toast('Saved','success');
+  modalEl.remove();
+  renderComplianceTable();
+}
+async function compDelete(id){
+  if(!confirm('Delete this compliance record? Linked RCA will also be deleted.')) return;
+  loadingStart();
+  const { error } = await API.remove('compliance', id);
+  loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.compliance = State.compliance.filter(x=>x.id!==id);
+  State.breachRCA = State.breachRCA.filter(b=>b.compliance_id!==id);
+  audit('delete','compliance', id);
+  toast('Deleted','success');
+  renderComplianceTable();
+}
+function compExport(){
+  const rows = applyGlobalFilters('cg', State.compliance);
+  const out = rows.map(r=>[fmtDate(r.date), r.facility, r.type, r.partner, r.rh, r.zone, N(r.volume), N(r.connection), N(r.bagging), calcBreach(r.volume,r.connection), calcExcConn(r)]);
+  exportXLSX(out, ['Date','Facility','Type','Partner','RH','Zone','Volume','Conn%','Bag%','Breach Qty','Exc.Conn%'], 'compliance');
+}
+function compDownloadTemplate(){
+  const data = [['date','facility','type','partner','volume','matured','connection','bagging'], [todayISO(),'SAMPLE_FAC_01','LM-SC','Valmo',10000,9800,98,99]];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, 'compliance_template.xlsx');
+}
+function compShowPaste(){
+  const body = `<div class="field"><label>Paste tab-separated rows (date<TAB>facility<TAB>type<TAB>partner<TAB>volume<TAB>matured<TAB>connection<TAB>bagging)</label>
+    <textarea id="paste_box" rows="10" style="font-family:var(--font-mono);font-size:12px"></textarea>
+    <div class="field-help">First line can be headers. Dates accepted as yyyy-mm-dd or dd-mm-yyyy.</div></div>`;
+  modal({ title:'Quick Paste Compliance', body, size:'lg', actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Parse & Insert', class:'btn-primary', onclick:m=>compParsePaste(m) }
+  ]});
+}
+async function compParsePaste(modalEl){
+  const raw = $('paste_box').value;
+  const lines = raw.split('\n').filter(l=>l.trim());
+  if(!lines.length){ toast('No data','error'); return; }
+  const recs = [];
+  lines.forEach((line,i)=>{
+    const cells = line.split(/\t|,/).map(c=>c.trim());
+    if(i===0 && /date/i.test(cells[0])) return;
+    if(cells.length<5) return;
+    const rec = {
+      date: parseAnyDate(cells[0]),
+      facility: norm(cells[1]),
+      type: cells[2]||'',
+      partner: cells[3]||'',
+      volume: N(cells[4]),
+      matured: cells.length>=6?N(cells[5]):0,
+      connection: cells.length>=7?N(cells[6]):N(cells[5]),
+      bagging: cells.length>=8?N(cells[7]):0
+    };
+    if(rec.date && rec.facility && rec.volume>=0){
+      normalizeCDBagging(rec);
+      rec.id = compKey(rec);
+      const f = findFacility(rec.facility);
+      if(f){ rec.zone=f.zone; rec.rh=f.rh; rec.ch=f.ch; rec.zh=f.zh; if(!rec.partner) rec.partner=f.partner; if(!rec.type) rec.type=f.facility_type; }
+      rec.updated_by=State.user.id; rec.updated_at=new Date().toISOString(); rec.created_by=State.user.id;
+      recs.push(rec);
+    }
+  });
+  if(!recs.length){ toast('No valid rows parsed','error'); return; }
+  loadingStart();
+  const { error } = await API.upsert('compliance', recs);
+  loadingStop();
+  if(error){ toast('Bulk insert failed: '+error.message,'error'); return; }
+  recs.forEach(rec=>{
+    const idx = State.compliance.findIndex(x=>x.id===rec.id);
+    if(idx>=0) State.compliance[idx] = rec; else State.compliance.unshift(rec);
+  });
+  audit('bulk_paste','compliance', recs.length+' records');
+  toast(recs.length+' records imported','success');
+  modalEl.remove();
+  renderComplianceTable();
+}
+function compBulkUpload(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    try{
+      const wb = XLSX.read(e.target.result, { type:'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+      if(!rows.length){ toast('Empty file','error'); return; }
+      const recs = [];
+      rows.forEach(row=>{
+        const facility = norm(row.facility||row.Facility||row.FACILITY||'');
+        const date = parseAnyDate(row.date||row.Date||row.DATE||'');
+        if(!facility || !date) return;
+        const rec = {
+          date, facility,
+          type: row.type||row.Type||'',
+          partner: row.partner||row.Partner||'',
+          volume: N(row.volume||row.Volume),
+          matured: N(row.matured||row.Matured),
+          connection: N(row.connection||row.Connection),
+          bagging: N(row.bagging||row.Bagging)
+        };
+        normalizeCDBagging(rec);
+        rec.id = compKey(rec);
+        const f = findFacility(facility);
+        if(f){ rec.zone=f.zone; rec.rh=f.rh; rec.ch=f.ch; rec.zh=f.zh; if(!rec.partner) rec.partner=f.partner; if(!rec.type) rec.type=f.facility_type; }
+        rec.updated_by=State.user.id; rec.updated_at=new Date().toISOString(); rec.created_by=State.user.id;
+        recs.push(rec);
+      });
+      if(!recs.length){ toast('No valid rows','error'); return; }
+      loadingStart();
+      const { error } = await API.upsert('compliance', recs);
+      loadingStop();
+      if(error){ toast('Upload failed: '+error.message,'error'); return; }
+      recs.forEach(rec=>{
+        const idx = State.compliance.findIndex(x=>x.id===rec.id);
+        if(idx>=0) State.compliance[idx] = rec; else State.compliance.unshift(rec);
+      });
+      audit('upload','compliance', file.name+' · '+recs.length+' records');
+      toast(recs.length+' records uploaded','success');
+      renderComplianceTable();
+    }catch(e){ toast('Upload error: '+e.message,'error'); }
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   20. BREACH RCA MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderBreach(){
+  const root = $('m-breach');
+  root.innerHTML = `
+    <div id="breach_filter"></div>
+    <div class="grid-stats" id="breach_kpis"></div>
+    <div class="subtabs">
+      <div class="subtab active" id="bsub-pending" onclick="breachSwitch('pending')">⏳ Pending RCA</div>
+      <div class="subtab" id="bsub-done" onclick="breachSwitch('done')">✓ Completed RCA</div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title" id="breach_title">Pending Breaches</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="breachExport()">Export</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="breach_tbl"></div></div></div>
+  `;
+  State._breachSub = State._breachSub || 'pending';
+  buildFilterBar('breach_filter', 'bg', renderBreachData);
+  renderBreachData();
+}
+function breachSwitch(sub){
+  State._breachSub = sub;
+  ['pending','done'].forEach(s=>$('bsub-'+s).classList.toggle('active', s===sub));
+  $('breach_title').textContent = sub==='pending' ? 'Pending Breaches' : 'Completed RCA';
+  renderBreachData();
+}
+function renderBreachData(){
+  const rows = applyGlobalFilters('bg', State.compliance).filter(r=>calcBreach(r.volume,r.connection)>0);
+  // KPIs
+  const totalBreaches = rows.length;
+  const totalBreachQty = rows.reduce((s,r)=>s+calcBreach(r.volume,r.connection),0);
+  const withRCA = rows.filter(r=>State.breachRCA.some(b=>b.compliance_id===r.id)).length;
+  const pendingCount = totalBreaches - withRCA;
+  setEl('breach_kpis', `
+    <div class="kpi-card"><div class="kpi-label">Total Breaches</div><div class="kpi-value red">${NUM(totalBreaches)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Breach Qty</div><div class="kpi-value red">${NUM(totalBreachQty)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">RCA Pending</div><div class="kpi-value orange">${NUM(pendingCount)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">RCA Done</div><div class="kpi-value green">${NUM(withRCA)}</div></div>
+  `);
+  const sub = State._breachSub;
+  let list = [];
+  if(sub==='pending'){
+    list = rows.filter(r=>!State.breachRCA.some(b=>b.compliance_id===r.id))
+               .sort((a,b)=>calcBreach(b.volume,b.connection)-calcBreach(a.volume,a.connection));
+    const body = list.map(r=>`<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td><b>${esc(r.facility)}</b></td>
+      <td>${esc(r.partner||'')}</td>
+      <td class="num"><span class="chip ${tierClass(r.connection)}">${PCT(r.connection)}</span></td>
+      <td class="num red">${NUM(calcBreach(r.volume,r.connection))}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="breachAddRCA('${esc(r.id)}')">Add RCA</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="center" style="padding:20px;color:var(--t3)">No pending RCA 🎉</td></tr>';
+    setEl('breach_tbl', `<table class="dt"><thead><tr><th class="no-sort">Date</th><th class="no-sort">Facility</th><th class="no-sort">Partner</th><th class="no-sort">Conn%</th><th class="no-sort">Breach Qty</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+  } else {
+    const rcaList = State.breachRCA.filter(b=>rows.some(r=>r.id===b.compliance_id))
+                                    .sort((a,b)=>(b.updated_at||'').localeCompare(a.updated_at||''));
+    const body = rcaList.map(b=>`<tr>
+      <td>${fmtDate(b.date)}</td>
+      <td><b>${esc(b.facility)}</b></td>
+      <td class="num red">${NUM(b.breach_qty)}</td>
+      <td>${esc(b.category)}</td>
+      <td class="num">${NUM(b.count)}</td>
+      <td class="small">${esc(b.remarks||'')}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="breachEditRCA('${esc(b.id)}')">✎</button>${State.user.role!=='user'?'<button class="btn btn-ghost btn-sm" onclick="breachDeleteRCA(\''+esc(b.id)+'\')">🗑</button>':''}</td>
+    </tr>`).join('') || '<tr><td colspan="7" class="center" style="padding:20px;color:var(--t3)">No completed RCA</td></tr>';
+    setEl('breach_tbl', `<table class="dt"><thead><tr><th class="no-sort">Date</th><th class="no-sort">Facility</th><th class="no-sort">Breach Qty</th><th class="no-sort">Category</th><th class="no-sort">Count</th><th class="no-sort">Remarks</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+  }
+}
+function breachAddRCA(complianceId){
+  const r = State.compliance.find(x=>x.id===complianceId); if(!r){ toast('Not found','error'); return; }
+  const breachQty = calcBreach(r.volume, r.connection);
+  const body = `<div class="banner info"><b>${esc(r.facility)}</b> · ${fmtDate(r.date)} · Breach Qty: <b>${NUM(breachQty)}</b></div>
+    <div class="form-grid cols-1">
+      <div class="field required"><label>Category</label><select id="rca_cat">${RCA_CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="field required"><label>Count (qty attributed)</label><input type="number" id="rca_count" value="${breachQty}" min="0"/></div>
+      <div class="field"><label>Remarks</label><textarea id="rca_remarks" rows="3"></textarea></div>
+    </div>`;
+  modal({ title:'Add RCA', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save RCA', class:'btn-primary', onclick:m=>breachSaveRCA(complianceId, r, m) }
+  ]});
+}
+async function breachSaveRCA(complianceId, comp, modalEl){
+  const rec = {
+    compliance_id: complianceId,
+    date: comp.date,
+    facility: comp.facility,
+    breach_qty: calcBreach(comp.volume, comp.connection),
+    category: getEl('rca_cat'),
+    count: N(getEl('rca_count')),
+    remarks: S(getEl('rca_remarks')),
+    updated_by: State.user.id,
+    created_by: State.user.id
+  };
+  loadingStart();
+  const { data, error } = await API.insert('breach_rca', rec);
+  loadingStop();
+  if(error){ toast('Save failed: '+error.message,'error'); return; }
+  if(data && data[0]) State.breachRCA.unshift(data[0]);
+  audit('create','breach_rca', rec.facility+' · '+rec.category);
+  toast('RCA saved','success');
+  modalEl.remove();
+  renderBreachData();
+}
+function breachEditRCA(id){
+  const b = State.breachRCA.find(x=>x.id===id); if(!b){ toast('Not found','error'); return; }
+  const body = `<div class="banner info"><b>${esc(b.facility)}</b> · ${fmtDate(b.date)} · Breach: <b>${NUM(b.breach_qty)}</b></div>
+    <div class="form-grid cols-1">
+      <div class="field required"><label>Category</label><select id="rca_cat">${RCA_CATEGORIES.map(c=>`<option ${c===b.category?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="field required"><label>Count</label><input type="number" id="rca_count" value="${b.count}" min="0"/></div>
+      <div class="field"><label>Remarks</label><textarea id="rca_remarks" rows="3">${esc(b.remarks||'')}</textarea></div>
+    </div>`;
+  modal({ title:'Edit RCA', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>breachUpdateRCA(id, m) }
+  ]});
+}
+async function breachUpdateRCA(id, modalEl){
+  const patch = {
+    category: getEl('rca_cat'),
+    count: N(getEl('rca_count')),
+    remarks: S(getEl('rca_remarks')),
+    updated_by: State.user.id
+  };
+  loadingStart();
+  const { data, error } = await API.update('breach_rca', id, patch);
+  loadingStop();
+  if(error){ toast('Update failed','error'); return; }
+  const i = State.breachRCA.findIndex(x=>x.id===id);
+  if(i>=0 && data && data[0]) State.breachRCA[i] = data[0];
+  audit('update','breach_rca', id);
+  toast('Updated','success');
+  modalEl.remove();
+  renderBreachData();
+}
+async function breachDeleteRCA(id){
+  if(!confirm('Delete this RCA?')) return;
+  loadingStart();
+  const { error } = await API.remove('breach_rca', id);
+  loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.breachRCA = State.breachRCA.filter(x=>x.id!==id);
+  audit('delete','breach_rca', id);
+  toast('Deleted','success');
+  renderBreachData();
+}
+function breachExport(){
+  const rows = applyGlobalFilters('bg', State.compliance).filter(r=>calcBreach(r.volume,r.connection)>0);
+  const out = rows.map(r=>{
+    const rca = State.breachRCA.find(b=>b.compliance_id===r.id);
+    return [fmtDate(r.date), r.facility, r.partner, r.rh, N(r.volume), N(r.connection), calcBreach(r.volume,r.connection), rca?rca.category:'PENDING', rca?N(rca.count):0, rca?rca.remarks:''];
+  });
+  exportXLSX(out, ['Date','Facility','Partner','RH','Volume','Conn%','Breach Qty','RCA Category','RCA Count','Remarks'], 'breach_rca');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   21. DAILY CALLOUTS MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderCallouts(){
+  const root = $('m-callouts');
+  root.innerHTML = `
+    <div id="call_filter"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Daily Callouts</div>
+        <div class="card-actions">
+          <button class="btn btn-soft btn-sm" onclick="callExport()">Export</button>
+          <button class="btn btn-primary btn-sm" onclick="callEdit(null)">+ Add Callout</button>
+        </div>
+      </div>
+      <div class="card-body no-pad"><div class="tbl-wrap" id="call_tbl"></div></div>
+    </div>
+  `;
+  buildFilterBar('call_filter', 'cag', renderCalloutsTable);
+  renderCalloutsTable();
+}
+function renderCalloutsTable(){
+  // Filter by date range / facility scope (no zone — callouts may not have it)
+  const dateFrom = getEl('cag_dateFrom'), dateTo = getEl('cag_dateTo'), month = getEl('cag_month');
+  let rows = State.callouts.slice();
+  if(month) rows = rows.filter(r=>isoToMonth(r.date)===month);
+  if(dateFrom) rows = rows.filter(r=>r.date>=dateFrom);
+  if(dateTo) rows = rows.filter(r=>r.date<=dateTo);
+  rows.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const body = rows.map(r=>`<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td><b>${esc(r.facility)}</b></td>
+    <td class="small">${esc(r.remarks||'').slice(0,250)}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="callEdit('${esc(r.id)}')">✎</button>${State.user.role!=='user'?'<button class="btn btn-ghost btn-sm" onclick="callDelete(\''+esc(r.id)+'\')">🗑</button>':''}</td>
+  </tr>`).join('') || '<tr><td colspan="4" class="center" style="padding:20px;color:var(--t3)">No callouts</td></tr>';
+  setEl('call_tbl', `<table class="dt"><thead><tr><th class="no-sort">Date</th><th class="no-sort">Facility</th><th class="no-sort">Remarks</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function callEdit(id){
+  const r = id ? State.callouts.find(x=>x.id===id) : { date:todayISO(), facility:'', remarks:'' };
+  const facOpts = State.master.map(m=>`<option value="${esc(m.facility)}" ${norm(m.facility)===norm(r.facility)?'selected':''}>${esc(m.facility)}</option>`).join('');
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Date</label><input type="date" id="ca_date" value="${esc(r.date)}"/></div>
+    <div class="field required"><label>Facility</label><select id="ca_facility"><option value="">— Select —</option>${facOpts}</select></div>
+  </div>
+  <div class="field required" style="margin-top:12px"><label>Callout Remarks</label><textarea id="ca_remarks" rows="4">${esc(r.remarks||'')}</textarea></div>`;
+  modal({ title:(id?'Edit':'Add')+' Callout', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>callSave(id, m) }
+  ]});
+}
+async function callSave(id, modalEl){
+  const rec = {
+    date: parseAnyDate(getEl('ca_date')),
+    facility: norm(getEl('ca_facility')),
+    remarks: S(getEl('ca_remarks')),
+    updated_by: State.user.id
+  };
+  if(!rec.date || !rec.facility || !rec.remarks){ toast('Fill all fields','error'); return; }
+  loadingStart();
+  let res;
+  if(id) res = await API.update('callouts', id, rec);
+  else { rec.created_by = State.user.id; res = await API.insert('callouts', rec); }
+  loadingStop();
+  if(res.error){ toast('Save failed','error'); return; }
+  if(res.data && res.data[0]){
+    if(id){ const i = State.callouts.findIndex(x=>x.id===id); if(i>=0) State.callouts[i]=res.data[0]; }
+    else State.callouts.unshift(res.data[0]);
+  }
+  audit(id?'update':'create','callouts', rec.facility);
+  toast('Saved','success'); modalEl.remove(); renderCalloutsTable();
+}
+async function callDelete(id){
+  if(!confirm('Delete this callout?')) return;
+  loadingStart(); const { error } = await API.remove('callouts', id); loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.callouts = State.callouts.filter(x=>x.id!==id);
+  audit('delete','callouts', id); toast('Deleted','success'); renderCalloutsTable();
+}
+function callExport(){
+  exportXLSX(State.callouts.map(r=>[fmtDate(r.date), r.facility, r.remarks]), ['Date','Facility','Remarks'], 'callouts');
+}
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   22. RANKING MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderRanking(){
+  const root = $('m-ranking');
+  root.innerHTML = `
+    <div id="rank_filter"></div>
+    <div class="card"><div class="card-header"><div class="card-title">Zone Ranking</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rank_zone"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">RH Ranking</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rank_rh"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">CH Ranking</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rank_ch"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Facility Ranking (Top 30)</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="rankExportFac()">Export</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rank_fac"></div></div></div>
+  `;
+  buildFilterBar('rank_filter', 'rg', renderRankingData);
+  renderRankingData();
+}
+function renderRankingData(){
+  const rows = applyGlobalFilters('rg', State.compliance);
+  function rankBy(key){
+    const grp = {};
+    rows.forEach(r=>{
+      let v = r[key];
+      if(!v && key!=='facility'){ const f=findFacility(r.facility); if(f) v = f[key==='ch'?'ch':key==='rh'?'rh':'zone']; }
+      v = v || '—';
+      (grp[v]=grp[v]||[]).push(r);
+    });
+    return Object.keys(grp).map(k=>{
+      const a = aggCompliance(grp[k]);
+      return { key:k, ...a, facilities:Object.keys(grp[k].reduce((o,r)=>{o[r.facility]=1;return o;},{})).length };
+    }).sort((a,b)=>b.excComp-a.excComp);
+  }
+  function rankTbl(stats, labelCol){
+    const body = stats.map((s,i)=>`<tr><td class="num">${i+1}</td><td><b>${esc(s.key)}</b></td><td class="num">${s.facilities}</td><td class="num">${NUM(s.records)}</td><td class="num"><span class="chip ${tierClass(s.actualComp)}">${PCT(s.actualComp)}</span></td><td class="num"><span class="chip ${tierClass(s.excComp)}">${PCT(s.excComp)}</span></td><td class="num">${PCT(s.avgBag)}</td><td class="num red">${NUM(s.breachQty)}</td><td class="num">${NUM(s.totVol)}</td></tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+    return `<table class="dt"><thead><tr><th class="no-sort">Rank</th><th class="no-sort">${labelCol}</th><th class="no-sort">Facilities</th><th class="no-sort">Records</th><th class="no-sort">Actual%</th><th class="no-sort">⭐Exc%</th><th class="no-sort">Bag%</th><th class="no-sort">Breach Qty</th><th class="no-sort">Volume</th></tr></thead><tbody>${body}</tbody></table>`;
+  }
+  setEl('rank_zone', rankTbl(rankBy('zone'), 'Zone'));
+  setEl('rank_rh', rankTbl(rankBy('rh'), 'RH'));
+  setEl('rank_ch', rankTbl(rankBy('ch'), 'CH'));
+  // Facilities (top 30)
+  const facRanks = rankBy('facility').slice(0, 30);
+  const body = facRanks.map((s,i)=>`<tr><td class="num">${i+1}</td><td><b>${esc(s.key)}</b></td><td class="num">${NUM(s.records)}</td><td class="num"><span class="chip ${tierClass(s.actualComp)}">${PCT(s.actualComp)}</span></td><td class="num"><span class="chip ${tierClass(s.excComp)}">${PCT(s.excComp)}</span></td><td class="num">${PCT(s.avgBag)}</td><td class="num red">${NUM(s.breachQty)}</td><td class="num">${NUM(s.totVol)}</td></tr>`).join('') || '<tr><td colspan="8" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('rank_fac', `<table class="dt"><thead><tr><th class="no-sort">Rank</th><th class="no-sort">Facility</th><th class="no-sort">Records</th><th class="no-sort">Actual%</th><th class="no-sort">⭐Exc%</th><th class="no-sort">Bag%</th><th class="no-sort">Breach Qty</th><th class="no-sort">Volume</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function rankExportFac(){
+  const rows = applyGlobalFilters('rg', State.compliance);
+  const byFac = {}; rows.forEach(r=>{ (byFac[r.facility]=byFac[r.facility]||[]).push(r); });
+  const out = Object.keys(byFac).map(f=>{ const a=aggCompliance(byFac[f]); return [f,a.records,a.totVol,a.actualComp,a.excComp,a.avgBag,a.breachQty]; });
+  out.sort((a,b)=>b[4]-a[4]);
+  exportXLSX(out, ['Facility','Records','Volume','Actual%','Exc%','Bag%','Breach Qty'], 'facility_ranking');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   23. REVIEW MODULE (Operations Control Tower)
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderReview(){
+  const root = $('m-review');
+  root.innerHTML = `
+    <div id="rev_filter"></div>
+    <div id="rev_kpis"></div>
+    <div id="rev_chCards"></div>
+  `;
+  buildFilterBar('rev_filter', 'rvg', renderReviewData);
+  renderReviewData();
+}
+function renderReviewData(){
+  const rows = applyGlobalFilters('rvg', State.compliance);
+  const agg = aggCompliance(rows);
+  setEl('rev_kpis', `<div class="grid-stats">
+    <div class="kpi-card"><div class="kpi-label">Records</div><div class="kpi-value">${NUM(agg.records)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Actual Comp</div><div class="kpi-value ${tierClass(agg.actualComp)}">${PCT(agg.actualComp)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">⭐ Exc.Comp</div><div class="kpi-value ${tierClass(agg.excComp)}">${PCT(agg.excComp)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Breach Qty</div><div class="kpi-value red">${NUM(agg.breachQty)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Facilities</div><div class="kpi-value">${NUM(agg.totalSC)}</div></div>
+  </div>`);
+  // Group by CH → per-facility list
+  const byCH = {};
+  rows.forEach(r=>{
+    let ch = r.ch || (findFacility(r.facility)||{}).ch || '—';
+    (byCH[ch]=byCH[ch]||[]).push(r);
+  });
+  const cardsHtml = Object.keys(byCH).sort().map(ch=>{
+    const chRows = byCH[ch];
+    const chAgg = aggCompliance(chRows);
+    const byFac = {};
+    chRows.forEach(r=>{ (byFac[r.facility]=byFac[r.facility]||[]).push(r); });
+    const facBody = Object.keys(byFac).sort().map(f=>{
+      const a = aggCompliance(byFac[f]);
+      return `<tr><td><b>${esc(f)}</b></td><td>${esc(byFac[f][0].type||'')}</td><td class="num">${NUM(a.records)}</td><td class="num"><span class="chip ${tierClass(a.actualComp)}">${PCT(a.actualComp)}</span></td><td class="num"><span class="chip ${tierClass(a.excComp)}">${PCT(a.excComp)}</span></td><td class="num red">${NUM(a.breachQty)}</td></tr>`;
+    }).join('');
+    return `<div class="card"><div class="card-header"><div class="card-title">CH: ${esc(ch)} · ${chAgg.totalSC} facilities · ${PCT(chAgg.excComp)} Exc.Comp</div></div><div class="card-body no-pad"><div class="tbl-wrap"><table class="dt"><thead><tr><th class="no-sort">Facility</th><th class="no-sort">Type</th><th class="no-sort">Records</th><th class="no-sort">Actual%</th><th class="no-sort">⭐Exc%</th><th class="no-sort">Breach Qty</th></tr></thead><tbody>${facBody}</tbody></table></div></div></div>`;
+  }).join('') || '<div class="empty-state"><div class="em-icon">🔍</div><h3>No data in scope</h3></div>';
+  setEl('rev_chCards', cardsHtml);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   24. PARTNER PERFORMANCE MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderPartner(){
+  const root = $('m-partner');
+  root.innerHTML = `
+    <div id="part_filter"></div>
+    <div class="card"><div class="card-header"><div class="card-title">Partner Summary</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="partExport()">Export</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="part_summary"></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Partner × Facility Detail</div></div><div class="card-body no-pad"><div class="tbl-wrap" id="part_detail"></div></div></div>
+  `;
+  buildFilterBar('part_filter', 'pg', renderPartnerData);
+  renderPartnerData();
+}
+function renderPartnerData(){
+  const rows = applyGlobalFilters('pg', State.compliance);
+  const byP = {};
+  rows.forEach(r=>{ const p=r.partner||'—'; (byP[p]=byP[p]||[]).push(r); });
+  const sum = Object.keys(byP).sort().map((p,i)=>{
+    const a = aggCompliance(byP[p]);
+    const facCount = Object.keys(byP[p].reduce((o,r)=>{o[r.facility]=1;return o;},{})).length;
+    return `<tr><td class="num">${i+1}</td><td><b>${esc(p)}</b></td><td class="num">${facCount}</td><td class="num">${NUM(a.records)}</td><td class="num">${NUM(a.totVol)}</td><td class="num"><span class="chip ${tierClass(a.actualComp)}">${PCT(a.actualComp)}</span></td><td class="num"><span class="chip ${tierClass(a.excComp)}">${PCT(a.excComp)}</span></td><td class="num">${PCT(a.avgBag)}</td><td class="num red">${NUM(a.breachQty)}</td></tr>`;
+  }).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('part_summary', `<table class="dt"><thead><tr><th class="no-sort">#</th><th class="no-sort">Partner</th><th class="no-sort">Facilities</th><th class="no-sort">Records</th><th class="no-sort">Volume</th><th class="no-sort">Actual%</th><th class="no-sort">⭐Exc%</th><th class="no-sort">Bag%</th><th class="no-sort">Breach Qty</th></tr></thead><tbody>${sum}</tbody></table>`);
+  // Detail
+  const det = {};
+  rows.forEach(r=>{ const k=(r.partner||'—')+'||'+r.facility; (det[k]=det[k]||[]).push(r); });
+  const detBody = Object.keys(det).sort().map(k=>{
+    const [p,f]=k.split('||');
+    const a = aggCompliance(det[k]);
+    return `<tr><td><b>${esc(p)}</b></td><td>${esc(f)}</td><td>${esc(det[k][0].type||'')}</td><td>${esc(det[k][0].zone||'')}</td><td>${esc(det[k][0].rh||'')}</td><td class="num">${NUM(a.records)}</td><td class="num">${NUM(a.totVol)}</td><td class="num"><span class="chip ${tierClass(a.actualComp)}">${PCT(a.actualComp)}</span></td><td class="num red">${NUM(a.breachQty)}</td></tr>`;
+  }).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No data</td></tr>';
+  setEl('part_detail', `<table class="dt"><thead><tr><th class="no-sort">Partner</th><th class="no-sort">Facility</th><th class="no-sort">Type</th><th class="no-sort">Zone</th><th class="no-sort">RH</th><th class="no-sort">Records</th><th class="no-sort">Volume</th><th class="no-sort">Actual%</th><th class="no-sort">Breach Qty</th></tr></thead><tbody>${detBody}</tbody></table>`);
+}
+function partExport(){
+  const rows = applyGlobalFilters('pg', State.compliance);
+  const byP = {}; rows.forEach(r=>{ const p=r.partner||'—'; (byP[p]=byP[p]||[]).push(r); });
+  const out = Object.keys(byP).map(p=>{ const a=aggCompliance(byP[p]); return [p,a.records,a.totVol,a.actualComp,a.excComp,a.avgBag,a.breachQty]; });
+  exportXLSX(out, ['Partner','Records','Volume','Actual%','Exc%','Bag%','Breach Qty'], 'partner');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   25. RLH MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderRLH(){
+  const root = $('m-rlh');
+  root.innerHTML = `
+    <div class="subtabs">
+      <div class="subtab active" id="rlh-sub-callouts" onclick="rlhSwitch('callouts')">🚚 Callouts</div>
+      <div class="subtab" id="rlh-sub-master" onclick="rlhSwitch('master')">🛣 Lane Master</div>
+    </div>
+    <div id="rlh_body"></div>
+  `;
+  State._rlhSub = State._rlhSub || 'callouts';
+  rlhRenderBody();
+}
+function rlhSwitch(sub){
+  State._rlhSub = sub;
+  ['callouts','master'].forEach(s=>$('rlh-sub-'+s).classList.toggle('active', s===sub));
+  rlhRenderBody();
+}
+function rlhRenderBody(){
+  if(State._rlhSub==='callouts'){
+    $('rlh_body').innerHTML = `
+      <div class="card"><div class="card-header"><div class="card-title">RLH Callouts</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="rlhExport()">Export</button><button class="btn btn-primary btn-sm" onclick="rlhEdit(null,'RLH')">+ Add Callout</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rlh_tbl"></div></div></div>
+    `;
+    rlhRenderCallouts('RLH');
+  } else {
+    $('rlh_body').innerHTML = `
+      <div class="card"><div class="card-header"><div class="card-title">RLH/NLH Lane Master</div><div class="card-actions"><button class="btn btn-primary btn-sm" onclick="rlhMasterEdit(null)">+ Add Lane</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rlh_master_tbl"></div></div></div>
+    `;
+    rlhRenderMaster();
+  }
+}
+function rlhRenderCallouts(filterLaneType){
+  const rows = State.rlhCallouts.filter(r=>!filterLaneType || r.lane_type===filterLaneType);
+  rows.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const body = rows.map(r=>`<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td><b>${esc(r.facility)}</b></td>
+    <td><span class="tag">${esc(r.lane_type)}</span></td>
+    <td>${esc(r.lane||'')}</td>
+    <td><span class="chip ${RLH_POSITIVE_EXCEPTIONS.indexOf(r.failure_reason)>=0?'cyan':'red'}">${esc(r.failure_reason)}</span></td>
+    <td class="num">${NUM(r.affected_qty)}</td>
+    <td class="small">${esc((r.affected_dc||[]).join(', '))}</td>
+    <td class="small">${esc(r.lh_remarks||'')}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="rlhEdit('${esc(r.id)}','${filterLaneType}')">✎</button>${State.user.role!=='user'?'<button class="btn btn-ghost btn-sm" onclick="rlhDelete(\''+esc(r.id)+'\')">🗑</button>':''}</td>
+  </tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No callouts</td></tr>';
+  setEl('rlh_tbl', `<table class="dt"><thead><tr><th class="no-sort">Date</th><th class="no-sort">Facility</th><th class="no-sort">Type</th><th class="no-sort">Lane</th><th class="no-sort">Failure Reason</th><th class="no-sort">Affected Qty</th><th class="no-sort">Affected DC</th><th class="no-sort">LH Remarks</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function rlhEdit(id, laneType){
+  const r = id ? State.rlhCallouts.find(x=>x.id===id) : { date:todayISO(), facility:'', lane_type:laneType||'RLH', failure_reason:'Spillover', lane:'', affected_dc:[], affected_qty:0, lh_remarks:'' };
+  if(!r){ toast('Not found','error'); return; }
+  const facOpts = State.master.map(m=>`<option value="${esc(m.facility)}" ${norm(m.facility)===norm(r.facility)?'selected':''}>${esc(m.facility)}</option>`).join('');
+  const laneOpts = State.rlhMaster.filter(m=>m.lane_type===r.lane_type).map(m=>`<option ${m.lane===r.lane?'selected':''}>${esc(m.lane)}</option>`).join('');
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Date</label><input type="date" id="rl_date" value="${esc(r.date)}"/></div>
+    <div class="field required"><label>Facility (Origin)</label><select id="rl_facility"><option value="">—</option>${facOpts}</select></div>
+    <div class="field required"><label>Lane Type</label><select id="rl_laneType">${RLH_LANE_TYPES.map(t=>`<option ${t===r.lane_type?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label>Lane</label><select id="rl_lane"><option value="">—</option>${laneOpts}</select></div>
+    <div class="field required"><label>Failure Reason</label><select id="rl_reason">${RLH_FAILURE_REASONS.map(o=>`<option ${o===r.failure_reason?'selected':''}>${o}</option>`).join('')}</select></div>
+    <div class="field required"><label>Affected Qty</label><input type="number" id="rl_qty" value="${N(r.affected_qty)}" min="0"/></div>
+    <div class="field"><label>LH Remarks</label><select id="rl_lh"><option value="">—</option>${RLH_LH_REMARKS.map(o=>`<option ${o===r.lh_remarks?'selected':''}>${o}</option>`).join('')}</select></div>
+    <div class="field"><label>Affected DCs (comma sep)</label><input id="rl_dc" value="${esc((r.affected_dc||[]).join(', '))}"/></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Summary</label><textarea id="rl_summary" rows="2">${esc(r.summary||'')}</textarea></div>
+  <div class="banner info" style="margin-top:10px;font-size:12px">
+    💡 Positive exceptions added to Exc.Compliance: <b>Spillover, Delay Placement</b>. Excluded: <b>Delay Departure - Ops Mess, Tech Issue / TMS Error</b>.
+  </div>`;
+  modal({ title:(id?'Edit':'Add')+' '+r.lane_type+' Callout', body, size:'lg', actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>rlhSave(id, m) }
+  ]});
+}
+async function rlhSave(id, modalEl){
+  const rec = {
+    date: parseAnyDate(getEl('rl_date')),
+    facility: norm(getEl('rl_facility')),
+    lane_type: getEl('rl_laneType'),
+    failure_reason: getEl('rl_reason'),
+    lane: S(getEl('rl_lane')),
+    affected_dc: S(getEl('rl_dc')).split(',').map(s=>s.trim()).filter(Boolean),
+    affected_qty: N(getEl('rl_qty')),
+    lh_remarks: getEl('rl_lh') || null,
+    summary: S(getEl('rl_summary')),
+    updated_by: State.user.id
+  };
+  if(!rec.date || !rec.facility){ toast('Date and Facility required','error'); return; }
+  loadingStart();
+  let res;
+  if(id) res = await API.update('rlh_callouts', id, rec);
+  else { rec.created_by = State.user.id; res = await API.insert('rlh_callouts', rec); }
+  loadingStop();
+  if(res.error){ toast('Save failed','error'); return; }
+  if(res.data && res.data[0]){
+    if(id){ const i=State.rlhCallouts.findIndex(x=>x.id===id); if(i>=0) State.rlhCallouts[i]=res.data[0]; }
+    else State.rlhCallouts.unshift(res.data[0]);
+  }
+  audit(id?'update':'create','rlh_callouts', rec.facility);
+  toast('Saved','success'); modalEl.remove(); rlhRenderBody();
+}
+async function rlhDelete(id){
+  if(!confirm('Delete this callout?')) return;
+  loadingStart(); const { error } = await API.remove('rlh_callouts', id); loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.rlhCallouts = State.rlhCallouts.filter(x=>x.id!==id);
+  toast('Deleted','success'); rlhRenderBody();
+}
+function rlhExport(){
+  exportXLSX(State.rlhCallouts.map(r=>[fmtDate(r.date), r.facility, r.lane_type, r.lane, r.failure_reason, N(r.affected_qty), (r.affected_dc||[]).join(', '), r.lh_remarks, r.summary]),
+             ['Date','Facility','Lane Type','Lane','Failure Reason','Affected Qty','Affected DCs','LH Remarks','Summary'], 'rlh_callouts');
+}
+function rlhRenderMaster(){
+  const body = State.rlhMaster.map(r=>`<tr>
+    <td><b>${esc(r.origin)}</b></td>
+    <td>${esc(r.lane)}</td>
+    <td><span class="tag">${esc(r.lane_type)}</span></td>
+    <td class="small">${esc((r.facilities||[]).join(', '))}</td>
+    <td class="small">${esc((r.dcs||[]).join(', '))}</td>
+    <td>${esc(r.zone||'')}</td>
+    <td>${esc(r.rh||'')}</td>
+    <td>${esc(r.ch||'')}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="rlhMasterEdit('${esc(r.id)}')">✎</button>${State.user.role==='super'?'<button class="btn btn-ghost btn-sm" onclick="rlhMasterDelete(\''+esc(r.id)+'\')">🗑</button>':''}</td>
+  </tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No lanes</td></tr>';
+  setEl('rlh_master_tbl', `<table class="dt"><thead><tr><th class="no-sort">Origin</th><th class="no-sort">Lane</th><th class="no-sort">Type</th><th class="no-sort">Facilities</th><th class="no-sort">DCs</th><th class="no-sort">Zone</th><th class="no-sort">RH</th><th class="no-sort">CH</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function rlhMasterEdit(id){
+  const r = id ? State.rlhMaster.find(x=>x.id===id) : { origin:'', lane:'', lane_type:'RLH', facilities:[], dcs:[], zone:'', rh:'', ch:'' };
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Origin</label><input id="lm_origin" value="${esc(r.origin)}"/></div>
+    <div class="field required"><label>Lane Name</label><input id="lm_lane" value="${esc(r.lane)}"/></div>
+    <div class="field required"><label>Lane Type</label><select id="lm_type">${RLH_LANE_TYPES.map(t=>`<option ${t===r.lane_type?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label>Zone</label><input id="lm_zone" value="${esc(r.zone||'')}"/></div>
+    <div class="field"><label>RH</label><input id="lm_rh" value="${esc(r.rh||'')}"/></div>
+    <div class="field"><label>CH</label><input id="lm_ch" value="${esc(r.ch||'')}"/></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Facilities (comma sep)</label><input id="lm_facilities" value="${esc((r.facilities||[]).join(', '))}"/></div>
+  <div class="field" style="margin-top:12px"><label>DCs (comma sep)</label><input id="lm_dcs" value="${esc((r.dcs||[]).join(', '))}"/></div>`;
+  modal({ title:(id?'Edit':'Add')+' Lane', body, size:'lg', actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>rlhMasterSave(id, m) }
+  ]});
+}
+async function rlhMasterSave(id, modalEl){
+  const rec = {
+    origin: norm(getEl('lm_origin')),
+    lane: S(getEl('lm_lane')),
+    lane_type: getEl('lm_type'),
+    facilities: S(getEl('lm_facilities')).split(',').map(s=>norm(s)).filter(Boolean),
+    dcs: S(getEl('lm_dcs')).split(',').map(s=>norm(s)).filter(Boolean),
+    zone: S(getEl('lm_zone')),
+    rh: S(getEl('lm_rh')),
+    ch: S(getEl('lm_ch'))
+  };
+  loadingStart();
+  let res;
+  if(id) res = await API.update('rlh_master', id, rec);
+  else res = await API.insert('rlh_master', rec);
+  loadingStop();
+  if(res.error){ toast('Save failed','error'); return; }
+  if(res.data && res.data[0]){
+    if(id){ const i=State.rlhMaster.findIndex(x=>x.id===id); if(i>=0) State.rlhMaster[i]=res.data[0]; }
+    else State.rlhMaster.push(res.data[0]);
+  }
+  toast('Saved','success'); modalEl.remove(); rlhRenderBody();
+}
+async function rlhMasterDelete(id){
+  if(!confirm('Delete this lane?')) return;
+  loadingStart(); const { error } = await API.remove('rlh_master', id); loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.rlhMaster = State.rlhMaster.filter(x=>x.id!==id);
+  toast('Deleted','success'); rlhRenderBody();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   26. NLH MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderNLH(){
+  const root = $('m-nlh');
+  root.innerHTML = `
+    <div class="subtabs">
+      <div class="subtab active" id="nlh-sub-callouts" onclick="nlhSwitch('callouts')">🚛 NLH Callouts</div>
+      <div class="subtab" id="nlh-sub-tracker" onclick="nlhSwitch('tracker')">📋 NLH Tracker</div>
+    </div>
+    <div id="nlh_body"></div>
+  `;
+  State._nlhSub = State._nlhSub || 'callouts';
+  nlhRenderBody();
+}
+function nlhSwitch(sub){
+  State._nlhSub = sub;
+  ['callouts','tracker'].forEach(s=>$('nlh-sub-'+s).classList.toggle('active', s===sub));
+  nlhRenderBody();
+}
+function nlhRenderBody(){
+  if(State._nlhSub==='callouts'){
+    $('nlh_body').innerHTML = `<div class="card"><div class="card-header"><div class="card-title">NLH Callouts</div><div class="card-actions"><button class="btn btn-primary btn-sm" onclick="rlhEdit(null,'NLH')">+ Add NLH Callout</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="rlh_tbl"></div></div></div>`;
+    rlhRenderCallouts('NLH');
+  } else {
+    $('nlh_body').innerHTML = `<div class="card"><div class="card-header"><div class="card-title">NLH Tracker</div><div class="card-actions"><button class="btn btn-primary btn-sm" onclick="nlhTrackerEdit(null)">+ Add Trip</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="nlh_tracker_tbl"></div></div></div>`;
+    nlhRenderTracker();
+  }
+}
+function nlhRenderTracker(){
+  const rows = State.nlh.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const body = rows.map(r=>`<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td><b>${esc(r.lane)}</b></td>
+    <td class="small">${r.scheduled_time?new Date(r.scheduled_time).toLocaleString('en-IN'):''}</td>
+    <td class="small">${r.actual_time?new Date(r.actual_time).toLocaleString('en-IN'):''}</td>
+    <td class="num ${r.variance_minutes>30?'red':''}">${r.variance_minutes!=null?r.variance_minutes+' min':'—'}</td>
+    <td><span class="chip ${r.status==='On Time'?'green':r.status==='Delayed'?'orange':r.status==='Cancelled'?'red':'gray'}">${esc(r.status||'')}</span></td>
+    <td class="small">${esc(r.remarks||'')}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="nlhTrackerEdit('${esc(r.id)}')">✎</button></td>
+  </tr>`).join('') || '<tr><td colspan="8" class="center" style="padding:20px;color:var(--t3)">No trips</td></tr>';
+  setEl('nlh_tracker_tbl', `<table class="dt"><thead><tr><th class="no-sort">Date</th><th class="no-sort">Lane</th><th class="no-sort">Scheduled</th><th class="no-sort">Actual</th><th class="no-sort">Variance</th><th class="no-sort">Status</th><th class="no-sort">Remarks</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function nlhTrackerEdit(id){
+  const r = id ? State.nlh.find(x=>x.id===id) : { date:todayISO(), lane:'', scheduled_time:'', actual_time:'', status:'On Time', remarks:'' };
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Date</label><input type="date" id="nt_date" value="${esc(r.date)}"/></div>
+    <div class="field required"><label>Lane</label><input id="nt_lane" value="${esc(r.lane)}"/></div>
+    <div class="field"><label>Scheduled Time</label><input type="datetime-local" id="nt_sched" value="${r.scheduled_time?r.scheduled_time.slice(0,16):''}"/></div>
+    <div class="field"><label>Actual Time</label><input type="datetime-local" id="nt_actual" value="${r.actual_time?r.actual_time.slice(0,16):''}"/></div>
+    <div class="field"><label>Status</label><select id="nt_status">${['On Time','Delayed','Cancelled','In Transit'].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Remarks</label><textarea id="nt_remarks" rows="2">${esc(r.remarks||'')}</textarea></div>`;
+  modal({ title:(id?'Edit':'Add')+' NLH Trip', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>nlhTrackerSave(id, m) }
+  ]});
+}
+async function nlhTrackerSave(id, modalEl){
+  const rec = {
+    date: parseAnyDate(getEl('nt_date')),
+    lane: S(getEl('nt_lane')),
+    scheduled_time: getEl('nt_sched') ? new Date(getEl('nt_sched')).toISOString() : null,
+    actual_time: getEl('nt_actual') ? new Date(getEl('nt_actual')).toISOString() : null,
+    status: getEl('nt_status'),
+    remarks: S(getEl('nt_remarks')),
+    updated_by: State.user.id
+  };
+  loadingStart();
+  let res = id ? await API.update('nlh_tracker', id, rec) : await API.insert('nlh_tracker', Object.assign({created_by:State.user.id}, rec));
+  loadingStop();
+  if(res.error){ toast('Save failed','error'); return; }
+  if(res.data && res.data[0]){
+    if(id){ const i=State.nlh.findIndex(x=>x.id===id); if(i>=0) State.nlh[i]=res.data[0]; }
+    else State.nlh.unshift(res.data[0]);
+  }
+  toast('Saved','success'); modalEl.remove(); nlhRenderBody();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   27. COD MODULE
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderCOD(){
+  const root = $('m-cod');
+  root.innerHTML = `
+    <div id="cod_filter"></div>
+    <div class="card"><div class="card-header"><div class="card-title">COD Records (feed Exc.Compliance)</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="codExport()">Export</button><button class="btn btn-primary btn-sm" onclick="codEdit(null)">+ Add COD</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="cod_tbl"></div></div></div>
+  `;
+  buildFilterBar('cod_filter', 'cdg', renderCODData);
+  renderCODData();
+}
+function renderCODData(){
+  const dateFrom = getEl('cdg_dateFrom'), dateTo = getEl('cdg_dateTo'), month = getEl('cdg_month');
+  let rows = State.cod.slice();
+  if(month) rows = rows.filter(r=>isoToMonth(r.date)===month);
+  if(dateFrom) rows = rows.filter(r=>r.date>=dateFrom);
+  if(dateTo) rows = rows.filter(r=>r.date<=dateTo);
+  rows.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const body = rows.map(r=>`<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td><b>${esc(r.facility)}</b></td>
+    <td class="num">${NUM(r.cod_qty)}</td>
+    <td class="small">${esc(r.remarks||'')}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="codEdit('${esc(r.id)}')">✎</button>${State.user.role!=='user'?'<button class="btn btn-ghost btn-sm" onclick="codDelete(\''+esc(r.id)+'\')">🗑</button>':''}</td>
+  </tr>`).join('') || '<tr><td colspan="5" class="center" style="padding:20px;color:var(--t3)">No COD records</td></tr>';
+  setEl('cod_tbl', `<table class="dt"><thead><tr><th class="no-sort">Date</th><th class="no-sort">Facility</th><th class="no-sort">COD Qty</th><th class="no-sort">Remarks</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function codEdit(id){
+  const r = id ? State.cod.find(x=>x.id===id) : { date:todayISO(), facility:'', cod_qty:0, remarks:'' };
+  const facOpts = State.master.map(m=>`<option value="${esc(m.facility)}" ${norm(m.facility)===norm(r.facility)?'selected':''}>${esc(m.facility)}</option>`).join('');
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Date</label><input type="date" id="cd_date" value="${esc(r.date)}"/></div>
+    <div class="field required"><label>Facility</label><select id="cd_facility"><option value="">—</option>${facOpts}</select></div>
+    <div class="field required"><label>COD Qty</label><input type="number" id="cd_qty" value="${N(r.cod_qty)}" min="0"/></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Remarks</label><textarea id="cd_remarks" rows="2">${esc(r.remarks||'')}</textarea></div>`;
+  modal({ title:(id?'Edit':'Add')+' COD Record', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>codSave(id, m) }
+  ]});
+}
+async function codSave(id, modalEl){
+  const rec = {
+    date: parseAnyDate(getEl('cd_date')),
+    facility: norm(getEl('cd_facility')),
+    cod_qty: N(getEl('cd_qty')),
+    remarks: S(getEl('cd_remarks')),
+    updated_by: State.user.id
+  };
+  if(!rec.date||!rec.facility){ toast('Date and facility required','error'); return; }
+  loadingStart();
+  let res;
+  if(id) res = await API.update('cod_data', id, rec);
+  else { rec.created_by = State.user.id; res = await API.upsert('cod_data', rec); }
+  loadingStop();
+  if(res.error){ toast('Save failed: '+res.error.message,'error'); return; }
+  if(res.data && res.data[0]){
+    if(id){ const i=State.cod.findIndex(x=>x.id===id); if(i>=0) State.cod[i]=res.data[0]; }
+    else {
+      const existing = State.cod.findIndex(x=>x.date===rec.date && norm(x.facility)===rec.facility);
+      if(existing>=0) State.cod[existing] = res.data[0]; else State.cod.unshift(res.data[0]);
+    }
+  }
+  audit(id?'update':'create','cod_data', rec.facility);
+  toast('Saved','success'); modalEl.remove(); renderCODData();
+}
+async function codDelete(id){
+  if(!confirm('Delete this COD record?')) return;
+  loadingStart(); const { error } = await API.remove('cod_data', id); loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.cod = State.cod.filter(x=>x.id!==id);
+  toast('Deleted','success'); renderCODData();
+}
+function codExport(){
+  exportXLSX(State.cod.map(r=>[fmtDate(r.date), r.facility, N(r.cod_qty), r.remarks]), ['Date','Facility','COD Qty','Remarks'], 'cod');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   28. PVA MODULE (Partner Volume Analysis pivot)
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderPVA(){
+  const root = $('m-pva');
+  root.innerHTML = `
+    <div id="pva_filter"></div>
+    <div class="card"><div class="card-header"><div class="card-title">PVA — Partner × Facility Volume Pivot</div><div class="card-actions"><button class="btn btn-soft btn-sm" onclick="pvaExport()">Export</button></div></div><div class="card-body no-pad"><div class="tbl-wrap" id="pva_tbl"></div></div></div>
+  `;
+  buildFilterBar('pva_filter', 'pvg', renderPVAData);
+  renderPVAData();
+}
+function renderPVAData(){
+  const rows = applyGlobalFilters('pvg', State.compliance);
+  // Pivot: partner (rows) × facility (cols), value = SUM(volume)
+  const partners = uniq(rows.map(r=>r.partner||'—'));
+  const facilities = uniq(rows.map(r=>r.facility));
+  const matrix = {};
+  rows.forEach(r=>{
+    const p = r.partner||'—'; const f = r.facility;
+    matrix[p] = matrix[p] || {};
+    matrix[p][f] = (matrix[p][f]||0) + N(r.volume);
+  });
+  if(!partners.length){ setEl('pva_tbl', '<div class="empty-state"><div class="em-icon">📈</div><h3>No PVA data</h3></div>'); return; }
+  const head = `<thead><tr><th class="no-sort">Partner</th>${facilities.map(f=>`<th class="no-sort">${esc(f)}</th>`).join('')}<th class="no-sort">Total</th></tr></thead>`;
+  const body = partners.map(p=>{
+    let total = 0;
+    const cells = facilities.map(f=>{ const v = (matrix[p]||{})[f] || 0; total += v; return `<td class="num">${v?NUM(v):'—'}</td>`; }).join('');
+    return `<tr><td><b>${esc(p)}</b></td>${cells}<td class="num"><b>${NUM(total)}</b></td></tr>`;
+  }).join('');
+  setEl('pva_tbl', `<table class="dt">${head}<tbody>${body}</tbody></table>`);
+}
+function pvaExport(){
+  const rows = applyGlobalFilters('pvg', State.compliance);
+  const partners = uniq(rows.map(r=>r.partner||'—'));
+  const facilities = uniq(rows.map(r=>r.facility));
+  const matrix = {};
+  rows.forEach(r=>{ const p=r.partner||'—'; matrix[p]=matrix[p]||{}; matrix[p][r.facility]=(matrix[p][r.facility]||0)+N(r.volume); });
+  const out = [['Partner', ...facilities, 'Total']];
+  partners.forEach(p=>{
+    let total = 0;
+    const row = [p, ...facilities.map(f=>{ const v=(matrix[p]||{})[f]||0; total+=v; return v; }), total];
+    out.push(row);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(out);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'PVA');
+  XLSX.writeFile(wb, 'pva_'+todayISO()+'.xlsx');
+}
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   29. DOD MODULE — Excel-style 157-column raw sheet renderer
+   ═══════════════════════════════════════════════════════════════════════ */
+function colLetter(n){
+  // 1=A, 26=Z, 27=AA, etc
+  let s = '';
+  while(n>0){ const m = (n-1)%26; s = String.fromCharCode(65+m) + s; n = Math.floor((n-1)/26); }
+  return s;
+}
+function colClass(n){
+  if(n===DOD_FACILITY_COL) return '';
+  if(n===DOD_SEPARATOR_COL) return 'col-separator';
+  if(n>=DOD_FORWARD_START && n<=DOD_FORWARD_END) return 'col-forward';
+  if(n>=DOD_RTO_START && n<=DOD_RTO_END) return 'col-rto';
+  return '';
+}
+function colLetterClass(n){
+  if(n===DOD_SEPARATOR_COL) return 'col-letter-separator';
+  if(n>=DOD_FORWARD_START && n<=DOD_FORWARD_END) return 'col-letter-forward';
+  if(n>=DOD_RTO_START && n<=DOD_RTO_END) return 'col-letter-rto';
+  return '';
+}
+
+function renderDOD(){
+  const root = $('m-dod');
+  root.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">DOD Performance Tracker</div>
+        <div class="card-actions">
+          <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload XLSX/CSV
+            <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="dodUpload(this)"/>
+          </label>
+          <button class="btn btn-soft btn-sm" onclick="dodLocationMaster()">📍 Location Master</button>
+          <button class="btn btn-soft btn-sm" onclick="dodColumnManager()">📊 Column Manager</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="filter-bar">
+          <span class="filter-label">Report Date</span>
+          <select class="filter-input" id="dod_date" onchange="dodLoadSheet()" style="min-width:180px">
+            <option value="">— Select date —</option>
+            ${State.dodIndex.map(d=>`<option value="${d.report_date}">${fmtDate(d.report_date)} (${d.total_rows} rows)</option>`).join('')}
+          </select>
+          <span class="filter-label">Search</span>
+          <input type="text" class="filter-input" id="dod_search" placeholder="Filter by facility…" oninput="dodApplySearch()"/>
+          <button class="filter-reset" onclick="dodResetFilters()">Reset</button>
+          <span style="margin-left:auto;font-size:12px;color:var(--t2)" id="dod_meta"></span>
+        </div>
+        <div class="banner info" id="dod_emptyMsg" style="display:${State.dodIndex.length?'none':'block'}">
+          <b>No DOD sheets uploaded yet.</b> Upload an XLSX/CSV file using the button above. The sheet should have 157 columns (J=Facility, K-CE=Forward time buckets, CF=separator, CG-FA=RTO time buckets) and 5 frozen header rows.
+        </div>
+        <div id="dod_grid"></div>
+      </div>
+    </div>
+  `;
+  // Auto-load latest sheet
+  if(State.dodIndex.length && !State.dodSheet){
+    $('dod_date').value = State.dodIndex[0].report_date;
+    dodLoadSheet();
+  } else if(State.dodSheet){
+    $('dod_date').value = State.dodSheet.report_date;
+    dodRenderGrid();
+  }
+}
+
+async function dodUpload(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    try{
+      loadingStart();
+      const wb = XLSX.read(e.target.result, { type:'binary', cellDates:true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // Parse as 2-D array
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+      if(!rows.length){ toast('Empty file','error'); loadingStop(); input.value=''; return; }
+      // Pad rows to 157 columns
+      const totalCols = Math.max(157, ...rows.map(r=>r.length));
+      const padded = rows.map(r=>{ const out = new Array(totalCols).fill(''); for(let i=0;i<r.length;i++) out[i] = r[i]==null?'':String(r[i]); return out; });
+      // Prompt for report date (default = today)
+      const defaultDate = todayISO();
+      const dateInput = prompt('Report date for this sheet (YYYY-MM-DD):', defaultDate);
+      const reportDate = parseAnyDate(dateInput || defaultDate);
+      if(!reportDate){ loadingStop(); input.value=''; return; }
+      const rec = {
+        report_date: reportDate,
+        file_name: file.name,
+        rows: padded,
+        total_cols: totalCols,
+        total_rows: padded.length,
+        uploaded_by: State.user.id,
+        uploaded_at: new Date().toISOString()
+      };
+      const { error } = await API.upsert('dod_uploads', rec);
+      loadingStop();
+      if(error){ toast('Upload failed: '+error.message,'error'); input.value=''; return; }
+      // Update local index
+      const idx = State.dodIndex.findIndex(x=>x.report_date===reportDate);
+      const idxRec = { report_date:reportDate, file_name:file.name, total_rows:padded.length, total_cols:totalCols, uploaded_at:rec.uploaded_at };
+      if(idx>=0) State.dodIndex[idx] = idxRec; else State.dodIndex.unshift(idxRec);
+      State.dodIndex.sort((a,b)=>(b.report_date||'').localeCompare(a.report_date||''));
+      State.dodSheet = rec;
+      audit('upload','dod', file.name+' · '+reportDate);
+      toast('Uploaded: '+padded.length+' rows × '+totalCols+' cols','success');
+      renderDOD();
+    }catch(e){
+      loadingStop();
+      toast('Upload error: '+e.message,'error');
+      console.error(e);
+    }
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function dodLoadSheet(){
+  const date = getEl('dod_date');
+  if(!date){ State.dodSheet = null; $('dod_grid').innerHTML=''; return; }
+  loadingStart();
+  try{
+    const { data, error } = await sb.from('dod_uploads').select('*').eq('report_date', date).single();
+    if(error || !data){ toast('Failed to load sheet','error'); loadingStop(); return; }
+    State.dodSheet = data;
+    // Load column prefs
+    const { data: prefs } = await sb.from('dod_column_prefs').select('*').eq('report_date', date).maybeSingle();
+    State.dodColPrefs = prefs || { hidden_cols:[], filter_mapping:{status:null,zone:null,rh:null}, sort:null };
+    dodRenderGrid();
+  }catch(e){ toast('Load error: '+e.message,'error'); }
+  finally{ loadingStop(); }
+}
+
+function dodRenderGrid(){
+  if(!State.dodSheet){ $('dod_grid').innerHTML=''; return; }
+  const sheet = State.dodSheet;
+  const cols = sheet.total_cols || 157;
+  const hidden = (State.dodColPrefs && State.dodColPrefs.hidden_cols) || [];
+  const visible = []; for(let c=1; c<=cols; c++){ if(hidden.indexOf(c)<0) visible.push(c); }
+  // Header letters row
+  const colHeaders = visible.map(c=>`<th class="${colLetterClass(c)}" onclick="dodSortCol(${c})" title="${colLetter(c)}">${colLetter(c)}</th>`).join('');
+  // Frozen header rows (first 5)
+  const frozenRows = [];
+  for(let r=0; r<DOD_FROZEN_HEADER_ROWS; r++){
+    const cells = visible.map(c=>{
+      const cellClass = (c===DOD_FACILITY_COL) ? 'col-j' : colClass(c);
+      const val = (sheet.rows[r] && sheet.rows[r][c-1]) || '';
+      return `<td class="${cellClass}"><div class="cell-inner" title="${esc(String(val))}">${esc(String(val))}</div></td>`;
+    }).join('');
+    frozenRows.push(`<tr class="frozen-row frozen-row-${r+1}"><td class="rownum">${r+1}</td>${cells}</tr>`);
+  }
+  // Body rows (from row 5 onward)
+  const search = (getEl('dod_search')||'').toLowerCase();
+  const sort = State.dodColPrefs && State.dodColPrefs.sort;
+  let bodyRows = sheet.rows.slice(DOD_FROZEN_HEADER_ROWS).map((row, i)=>({ rownum: DOD_FROZEN_HEADER_ROWS+i+1, data: row }));
+  if(search){ bodyRows = bodyRows.filter(r=>{ const fac = (r.data[DOD_FACILITY_COL-1]||'').toLowerCase(); return fac.includes(search); }); }
+  if(sort){
+    const c = sort.col, dir = sort.dir;
+    bodyRows.sort((a,b)=>{
+      const va = a.data[c-1]||'', vb = b.data[c-1]||'';
+      const na = parseFloat(va), nb = parseFloat(vb);
+      if(!isNaN(na) && !isNaN(nb)) return dir==='asc' ? na-nb : nb-na;
+      return dir==='asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+  }
+  // Cap to first 1000 visible rows for perf
+  const cap = 1000;
+  const totalVisible = bodyRows.length;
+  bodyRows = bodyRows.slice(0, cap);
+  const dataRows = bodyRows.map(r=>{
+    const cells = visible.map(c=>{
+      const cellClass = (c===DOD_FACILITY_COL) ? 'col-j' : colClass(c);
+      const val = r.data[c-1] || '';
+      return `<td class="${cellClass}"><div class="cell-inner" title="${esc(String(val))}">${esc(String(val))}</div></td>`;
+    }).join('');
+    return `<tr><td class="rownum">${r.rownum}</td>${cells}</tr>`;
+  }).join('');
+  const html = `<div class="dod-grid-wrap">
+    <table class="dod-grid">
+      <thead><tr class="col-letters"><th class="rownum">#</th>${colHeaders}</tr></thead>
+      <tbody>${frozenRows.join('')}${dataRows}</tbody>
+    </table>
+  </div>`;
+  $('dod_grid').innerHTML = html;
+  setEl('dod_meta', `${sheet.file_name} · ${sheet.total_rows} rows × ${cols} cols${totalVisible>cap?' · showing first '+cap+' of '+totalVisible:''}`);
+}
+
+function dodApplySearch(){ dodRenderGrid(); }
+function dodResetFilters(){
+  $('dod_search').value = '';
+  if(State.dodColPrefs) State.dodColPrefs.sort = null;
+  dodRenderGrid();
+}
+
+async function dodSortCol(c){
+  const prefs = State.dodColPrefs = State.dodColPrefs || { hidden_cols:[], filter_mapping:{status:null,zone:null,rh:null}, sort:null };
+  if(!prefs.sort || prefs.sort.col!==c) prefs.sort = { col:c, dir:'asc' };
+  else if(prefs.sort.dir==='asc') prefs.sort.dir = 'desc';
+  else prefs.sort = null;
+  await dodSavePrefs();
+  dodRenderGrid();
+}
+
+async function dodSavePrefs(){
+  if(!State.dodSheet) return;
+  const rec = {
+    report_date: State.dodSheet.report_date,
+    hidden_cols: (State.dodColPrefs && State.dodColPrefs.hidden_cols) || [],
+    filter_mapping: (State.dodColPrefs && State.dodColPrefs.filter_mapping) || { status:null,zone:null,rh:null },
+    sort: (State.dodColPrefs && State.dodColPrefs.sort) || null,
+    updated_by: State.user.id
+  };
+  await API.upsert('dod_column_prefs', rec);
+}
+
+function dodColumnManager(){
+  if(!State.dodSheet){ toast('Load a sheet first','warn'); return; }
+  const cols = State.dodSheet.total_cols;
+  const hidden = (State.dodColPrefs && State.dodColPrefs.hidden_cols) || [];
+  // Get the header row for friendly names
+  const headerRow = (State.dodSheet.rows[4] || State.dodSheet.rows[0] || []);
+  let html = `<div class="banner info">Toggle which columns are visible. Forward zone = K-CE (blue), RTO zone = CG-FA (orange).</div>`;
+  html += `<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-soft btn-sm" onclick="dodCMAll(true)">Show All</button><button class="btn btn-soft btn-sm" onclick="dodCMAll(false)">Hide All (except J)</button><button class="btn btn-soft btn-sm" onclick="dodCMForward()">Forward Only</button><button class="btn btn-soft btn-sm" onclick="dodCMRTO()">RTO Only</button></div>`;
+  html += `<div style="max-height:400px;overflow:auto;border:1px solid var(--border);border-radius:6px">`;
+  html += `<table class="dt" style="font-size:12px"><thead><tr><th class="no-sort">Show</th><th class="no-sort">Col</th><th class="no-sort">Header (Row 5)</th><th class="no-sort">Zone</th></tr></thead><tbody>`;
+  for(let c=1; c<=cols; c++){
+    const isHidden = hidden.indexOf(c)>=0;
+    const header = (headerRow[c-1] || '').toString().slice(0, 40);
+    let zone = '';
+    if(c===DOD_FACILITY_COL) zone = '<span class="tag">Facility</span>';
+    else if(c===DOD_SEPARATOR_COL) zone = '<span class="tag">Sep</span>';
+    else if(c>=DOD_FORWARD_START && c<=DOD_FORWARD_END) zone = '<span class="chip" style="background:#dbeafe;color:#1e40af">Forward</span>';
+    else if(c>=DOD_RTO_START && c<=DOD_RTO_END) zone = '<span class="chip" style="background:#fed7aa;color:#9a3412">RTO</span>';
+    else zone = '<span class="tag">Other</span>';
+    html += `<tr><td class="center"><input type="checkbox" data-col="${c}" ${isHidden?'':'checked'} ${c===DOD_FACILITY_COL?'disabled':''}/></td><td class="num"><b>${colLetter(c)}</b></td><td>${esc(header)}</td><td>${zone}</td></tr>`;
+  }
+  html += '</tbody></table></div>';
+  modal({ title:'Column Manager', body:html, size:'lg', actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Apply', class:'btn-primary', onclick:m=>dodCMApply(m) }
+  ]});
+}
+function dodCMAll(show){
+  document.querySelectorAll('[data-col]').forEach(cb=>{ if(cb.disabled) return; cb.checked = show; });
+}
+function dodCMForward(){
+  document.querySelectorAll('[data-col]').forEach(cb=>{
+    if(cb.disabled) return;
+    const c = parseInt(cb.dataset.col);
+    cb.checked = (c===DOD_FACILITY_COL) || (c>=DOD_FORWARD_START && c<=DOD_FORWARD_END);
+  });
+}
+function dodCMRTO(){
+  document.querySelectorAll('[data-col]').forEach(cb=>{
+    if(cb.disabled) return;
+    const c = parseInt(cb.dataset.col);
+    cb.checked = (c===DOD_FACILITY_COL) || (c>=DOD_RTO_START && c<=DOD_RTO_END);
+  });
+}
+async function dodCMApply(modalEl){
+  const hidden = [];
+  document.querySelectorAll('[data-col]').forEach(cb=>{ if(!cb.checked) hidden.push(parseInt(cb.dataset.col)); });
+  State.dodColPrefs = State.dodColPrefs || { hidden_cols:[], filter_mapping:{}, sort:null };
+  State.dodColPrefs.hidden_cols = hidden;
+  await dodSavePrefs();
+  modalEl.remove();
+  toast('Applied','success');
+  dodRenderGrid();
+}
+
+function dodLocationMaster(){
+  const body = `<div class="banner info">DOD module uses the unified <b>Master Facility</b> table. Edit facilities in the Admin Panel → Master tab.</div>
+    <div class="tbl-wrap" style="max-height:400px">
+      <table class="dt"><thead><tr><th class="no-sort">Facility</th><th class="no-sort">Type</th><th class="no-sort">Zone</th><th class="no-sort">RH</th><th class="no-sort">CH</th><th class="no-sort">Partner</th></tr></thead><tbody>
+      ${State.master.map(m=>`<tr><td><b>${esc(m.facility)}</b></td><td>${esc(m.facility_type)}</td><td>${esc(m.zone||'')}</td><td>${esc(m.rh||'')}</td><td>${esc(m.ch||'')}</td><td>${esc(m.partner||'')}</td></tr>`).join('') || '<tr><td colspan="6" class="center" style="padding:20px;color:var(--t3)">No facilities — add via Admin Panel</td></tr>'}
+      </tbody></table>
+    </div>`;
+  modal({ title:'Location Master', body, size:'lg', actions:[
+    { label:'Close', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Go to Admin', class:'btn-primary', onclick:m=>{ m.remove(); if(State.user.role==='super') switchTab('admin'); else toast('Only superadmin can edit master','warn'); } }
+  ]});
+}
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   30. ADMIN PANEL — Users, Master Facility, Audit Log
+   ═══════════════════════════════════════════════════════════════════════ */
+function renderAdmin(){
+  if(!State.user || State.user.role!=='super'){
+    $('m-admin').innerHTML = '<div class="banner error">Access denied. Superadmin only.</div>';
+    return;
+  }
+  const root = $('m-admin');
+  root.innerHTML = `
+    <div class="subtabs">
+      <div class="subtab active" id="adm-sub-users"  onclick="adminSwitch('users')">👥 Users</div>
+      <div class="subtab" id="adm-sub-master"        onclick="adminSwitch('master')">🏭 Master Facility</div>
+      <div class="subtab" id="adm-sub-audit"         onclick="adminSwitch('audit')">📜 Audit Log</div>
+      <div class="subtab" id="adm-sub-system"        onclick="adminSwitch('system')">⚙️ System</div>
+    </div>
+    <div id="adm_body"></div>
+  `;
+  State._admSub = State._admSub || 'users';
+  adminRenderBody();
+}
+function adminSwitch(sub){
+  State._admSub = sub;
+  ['users','master','audit','system'].forEach(s=>$('adm-sub-'+s).classList.toggle('active', s===sub));
+  adminRenderBody();
+}
+function adminRenderBody(){
+  const sub = State._admSub;
+  if(sub==='users') return adminRenderUsers();
+  if(sub==='master') return adminRenderMaster();
+  if(sub==='audit') return adminRenderAudit();
+  if(sub==='system') return adminRenderSystem();
+}
+
+/* ── 30.1 USERS ──────────────────────────────────────────────────────── */
+function adminRenderUsers(){
+  $('adm_body').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">User Profiles (${State.users.length})</div>
+        <div class="card-actions">
+          <button class="btn btn-soft btn-sm" onclick="adminInviteUser()">+ Invite User</button>
+          <button class="btn btn-soft btn-sm" onclick="adminRefreshUsers()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="card-body no-pad"><div class="tbl-wrap" id="adm_users_tbl"></div></div>
+    </div>
+    <div class="banner info" style="margin-top:14px">
+      <b>How to create a new user:</b>
+      1. Go to Supabase Dashboard → Authentication → Users → "Add user". Set their email + temporary password.
+      2. The system will auto-create a profile row here with role='user'.
+      3. Edit their row below to set role / zone / CH / locations.
+    </div>
+  `;
+  const body = State.users.map(u=>`<tr>
+    <td><b>${esc(u.name||'—')}</b><div style="font-size:11px;color:var(--t3)">${esc(u.email)}</div></td>
+    <td class="small">${esc(u.mobile||'—')}</td>
+    <td><span class="chip ${u.role==='super'?'cyan':u.role==='admin'?'orange':'gray'}">${esc(u.role)}</span></td>
+    <td>${esc(u.designation||'')}</td>
+    <td>${esc(u.zone||'')}</td>
+    <td>${esc(u.ch||'')}</td>
+    <td class="small">${(u.locations||[]).length?(u.locations.length+' loc'):''}</td>
+    <td>${u.active===false?'<span class="chip red">Inactive</span>':'<span class="chip green">Active</span>'}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm" onclick="adminEditUser('${esc(u.id)}')">✎</button>
+      ${u.id!==State.user.id?'<button class="btn btn-ghost btn-sm" onclick="adminToggleUser(\''+esc(u.id)+'\')">'+(u.active===false?'✓ Activate':'✕ Deactivate')+'</button>':''}
+    </td>
+  </tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No users</td></tr>';
+  setEl('adm_users_tbl', `<table class="dt"><thead><tr><th class="no-sort">User</th><th class="no-sort">Mobile</th><th class="no-sort">Role</th><th class="no-sort">Designation</th><th class="no-sort">Zone</th><th class="no-sort">CH</th><th class="no-sort">Locations</th><th class="no-sort">Status</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+async function adminRefreshUsers(){
+  loadingStart();
+  State.users = await API.listAll('user_profiles', { orderBy:'name' });
+  loadingStop();
+  adminRenderUsers();
+}
+function adminInviteUser(){
+  const body = `<div class="banner warn">User accounts must be created in <b>Supabase Dashboard → Authentication → Users</b>. The profile row will appear here automatically via database trigger. Then edit it to set role and scope.</div>
+    <ol style="padding-left:18px;line-height:1.8;font-size:13px">
+      <li>Open Supabase Dashboard → Authentication → Users</li>
+      <li>Click "Add user" → "Create new user"</li>
+      <li>Enter email + temp password, enable "Auto Confirm User"</li>
+      <li>Copy the user UUID</li>
+      <li>Click "Refresh" on this page</li>
+      <li>Edit the new row to set role, designation, zone, CH, locations</li>
+      <li>Share email + temp password with the user; ask them to change password on first login</li>
+    </ol>`;
+  modal({ title:'Invite New User', body, actions:[{ label:'OK', class:'btn-primary', onclick:m=>m.remove() }]});
+}
+function adminEditUser(id){
+  const u = State.users.find(x=>x.id===id); if(!u){ toast('User not found','error'); return; }
+  const zones = uniq(State.master.map(m=>m.zone).concat(['All']));
+  const chs   = uniq(State.master.map(m=>m.ch));
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Name</label><input id="au_name" value="${esc(u.name||'')}"/></div>
+    <div class="field"><label>Email (read-only)</label><input value="${esc(u.email||'')}" disabled style="background:var(--surface-3)"/></div>
+    <div class="field"><label>Mobile</label><input id="au_mobile" value="${esc(u.mobile||'')}"/></div>
+    <div class="field required"><label>Role</label><select id="au_role">${ROLES.map(r=>`<option ${r===u.role?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="field"><label>Designation</label><select id="au_des"><option value="">—</option>${DESIGNATIONS.map(d=>`<option ${d===u.designation?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div class="field"><label>Zone</label><select id="au_zone"><option value="All" ${u.zone==='All'?'selected':''}>All</option>${zones.filter(z=>z!=='All').map(z=>`<option ${z===u.zone?'selected':''}>${z}</option>`).join('')}</select></div>
+    <div class="field"><label>CH</label><select id="au_ch"><option value="">All</option>${chs.map(c=>`<option ${c===u.ch?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="field"><label>Active</label><select id="au_active"><option value="true" ${u.active!==false?'selected':''}>Yes</option><option value="false" ${u.active===false?'selected':''}>No</option></select></div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>Locations (comma-separated facility codes, leave blank for all)</label><textarea id="au_locs" rows="2">${esc((u.locations||[]).join(', '))}</textarea></div>`;
+  modal({ title:'Edit User', body, size:'lg', actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>adminSaveUser(id, m) }
+  ]});
+}
+async function adminSaveUser(id, modalEl){
+  const patch = {
+    name: S(getEl('au_name')),
+    mobile: S(getEl('au_mobile')) || null,
+    role: getEl('au_role'),
+    designation: getEl('au_des') || null,
+    zone: getEl('au_zone') || 'All',
+    ch: S(getEl('au_ch')) || null,
+    active: getEl('au_active')==='true',
+    locations: S(getEl('au_locs')).split(',').map(s=>norm(s)).filter(Boolean)
+  };
+  loadingStart();
+  const { data, error } = await API.update('user_profiles', id, patch);
+  loadingStop();
+  if(error){ toast('Save failed: '+error.message,'error'); return; }
+  if(data && data[0]){ const i = State.users.findIndex(x=>x.id===id); if(i>=0) State.users[i] = data[0]; }
+  audit('update','user', S(getEl('au_name')));
+  toast('User saved','success'); modalEl.remove(); adminRenderUsers();
+}
+async function adminToggleUser(id){
+  const u = State.users.find(x=>x.id===id); if(!u) return;
+  if(!confirm((u.active===false?'Activate':'Deactivate')+' '+u.name+'?')) return;
+  loadingStart();
+  const { error } = await API.update('user_profiles', id, { active: !u.active });
+  loadingStop();
+  if(error){ toast('Failed','error'); return; }
+  u.active = !u.active;
+  audit('toggle','user', u.name+' → '+(u.active?'active':'inactive'));
+  toast('Updated','success'); adminRenderUsers();
+}
+
+/* ── 30.2 MASTER FACILITY ────────────────────────────────────────────── */
+function adminRenderMaster(){
+  $('adm_body').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Master Facility (${State.master.length})</div>
+        <div class="card-actions">
+          <label class="btn btn-soft btn-sm" style="cursor:pointer">Upload XLSX
+            <input type="file" accept=".xlsx,.csv" style="display:none" onchange="adminMasterUpload(this)"/></label>
+          <button class="btn btn-soft btn-sm" onclick="adminMasterTemplate()">Template</button>
+          <button class="btn btn-soft btn-sm" onclick="adminMasterExport()">Export</button>
+          <button class="btn btn-primary btn-sm" onclick="adminMasterEdit(null)">+ Add Facility</button>
+        </div>
+      </div>
+      <div class="card-body no-pad"><div class="tbl-wrap" id="adm_master_tbl"></div></div>
+    </div>
+  `;
+  const body = State.master.map(m=>`<tr>
+    <td><b>${esc(m.facility)}</b></td>
+    <td>${esc(m.facility_type)}</td>
+    <td>${esc(m.zone||'')}</td>
+    <td>${esc(m.rh||'')}</td>
+    <td>${esc(m.ch||'')}</td>
+    <td>${esc(m.zh||'')}</td>
+    <td>${esc(m.partner||'')}</td>
+    <td>${m.active===false?'<span class="chip red">Inactive</span>':'<span class="chip green">Active</span>'}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm" onclick="adminMasterEdit('${esc(m.id)}')">✎</button>
+      <button class="btn btn-ghost btn-sm" onclick="adminMasterDelete('${esc(m.id)}')">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="9" class="center" style="padding:20px;color:var(--t3)">No facilities — click "+ Add Facility"</td></tr>';
+  setEl('adm_master_tbl', `<table class="dt"><thead><tr><th class="no-sort">Facility</th><th class="no-sort">Type</th><th class="no-sort">Zone</th><th class="no-sort">RH</th><th class="no-sort">CH</th><th class="no-sort">ZH</th><th class="no-sort">Partner</th><th class="no-sort">Status</th><th class="no-sort">Action</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function adminMasterEdit(id){
+  const m = id ? State.master.find(x=>x.id===id) : { facility:'', facility_type:'LM-SC', zone:'', rh:'', ch:'', zh:'', partner:'', active:true };
+  const body = `<div class="form-grid">
+    <div class="field required"><label>Facility Code</label><input id="mf_facility" value="${esc(m.facility)}" ${id?'readonly style="background:var(--surface-3)"':''}/></div>
+    <div class="field required"><label>Facility Type</label><select id="mf_type">${FACILITY_TYPES.map(t=>`<option ${t===m.facility_type?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field required"><label>Zone</label><input id="mf_zone" value="${esc(m.zone||'')}"/></div>
+    <div class="field"><label>RH</label><input id="mf_rh" value="${esc(m.rh||'')}"/></div>
+    <div class="field"><label>CH</label><input id="mf_ch" value="${esc(m.ch||'')}"/></div>
+    <div class="field"><label>ZH</label><input id="mf_zh" value="${esc(m.zh||'')}"/></div>
+    <div class="field"><label>Partner</label><input id="mf_partner" value="${esc(m.partner||'')}"/></div>
+    <div class="field"><label>Active</label><select id="mf_active"><option value="true" ${m.active!==false?'selected':''}>Yes</option><option value="false" ${m.active===false?'selected':''}>No</option></select></div>
+  </div>`;
+  modal({ title:(id?'Edit':'Add')+' Facility', body, actions:[
+    { label:'Cancel', class:'btn-soft', onclick:m=>m.remove() },
+    { label:'Save', class:'btn-primary', onclick:m=>adminMasterSave(id, m) }
+  ]});
+}
+async function adminMasterSave(id, modalEl){
+  const rec = {
+    facility: norm(getEl('mf_facility')),
+    facility_type: getEl('mf_type'),
+    zone: S(getEl('mf_zone')),
+    rh: S(getEl('mf_rh')) || null,
+    ch: S(getEl('mf_ch')) || null,
+    zh: S(getEl('mf_zh')) || null,
+    partner: S(getEl('mf_partner')) || null,
+    active: getEl('mf_active')==='true'
+  };
+  if(!rec.facility || !rec.zone){ toast('Facility and Zone required','error'); return; }
+  loadingStart();
+  let res;
+  if(id) res = await API.update('master_facility', id, rec);
+  else { rec.created_by = State.user.id; res = await API.upsert('master_facility', rec); }
+  loadingStop();
+  if(res.error){ toast('Save failed: '+res.error.message,'error'); return; }
+  if(res.data && res.data[0]){
+    if(id){ const i=State.master.findIndex(x=>x.id===id); if(i>=0) State.master[i]=res.data[0]; }
+    else {
+      const existing = State.master.findIndex(x=>norm(x.facility)===rec.facility);
+      if(existing>=0) State.master[existing] = res.data[0]; else State.master.push(res.data[0]);
+    }
+  }
+  audit(id?'update':'create','master_facility', rec.facility);
+  toast('Saved','success'); modalEl.remove(); adminRenderMaster();
+}
+async function adminMasterDelete(id){
+  const m = State.master.find(x=>x.id===id); if(!m) return;
+  if(!confirm('Delete '+m.facility+'? Compliance records will keep working but lookups will fail.')) return;
+  loadingStart(); const { error } = await API.remove('master_facility', id); loadingStop();
+  if(error){ toast('Delete failed','error'); return; }
+  State.master = State.master.filter(x=>x.id!==id);
+  audit('delete','master_facility', m.facility);
+  toast('Deleted','success'); adminRenderMaster();
+}
+function adminMasterTemplate(){
+  const data = [['facility','facility_type','zone','rh','ch','zh','partner','active'],
+                ['SAMPLE_FAC_01','LM-SC','South','R. Kumar','A. Singh','V. Rao','Valmo',true]];
+  const ws = XLSX.utils.aoa_to_sheet(data); const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Master'); XLSX.writeFile(wb, 'master_facility_template.xlsx');
+}
+function adminMasterExport(){
+  const out = State.master.map(m=>[m.facility, m.facility_type, m.zone, m.rh, m.ch, m.zh, m.partner, m.active]);
+  exportXLSX(out, ['facility','facility_type','zone','rh','ch','zh','partner','active'], 'master_facility');
+}
+function adminMasterUpload(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    try{
+      const wb = XLSX.read(e.target.result, { type:'binary' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+      const recs = [];
+      rows.forEach(row=>{
+        const facility = norm(row.facility||row.Facility||'');
+        if(!facility) return;
+        const type = row.facility_type||row.type||'';
+        if(FACILITY_TYPES.indexOf(type)<0) return;
+        recs.push({
+          facility,
+          facility_type: type,
+          zone: S(row.zone||row.Zone),
+          rh: S(row.rh||row.RH) || null,
+          ch: S(row.ch||row.CH) || null,
+          zh: S(row.zh||row.ZH) || null,
+          partner: S(row.partner||row.Partner) || null,
+          active: row.active===false || row.active==='false' ? false : true,
+          created_by: State.user.id
+        });
+      });
+      if(!recs.length){ toast('No valid rows','error'); input.value=''; return; }
+      loadingStart();
+      const { error } = await API.upsert('master_facility', recs);
+      loadingStop();
+      if(error){ toast('Upload failed: '+error.message,'error'); input.value=''; return; }
+      State.master = await API.listAll('master_facility', { orderBy:'facility' });
+      audit('upload','master_facility', recs.length+' rows');
+      toast(recs.length+' facilities saved','success');
+      adminRenderMaster();
+    }catch(e){ toast('Error: '+e.message,'error'); }
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ── 30.3 AUDIT LOG ──────────────────────────────────────────────────── */
+function adminRenderAudit(){
+  $('adm_body').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Audit Log (last ${State.audit.length} entries, localStorage)</div>
+        <div class="card-actions">
+          <button class="btn btn-soft btn-sm" onclick="adminAuditExport()">Export</button>
+          <button class="btn btn-danger btn-sm" onclick="adminAuditClear()">Clear</button>
+        </div>
+      </div>
+      <div class="card-body no-pad"><div class="tbl-wrap" id="adm_audit_tbl"></div></div>
+    </div>
+  `;
+  const rows = State.audit.slice(0, 500);
+  const body = rows.map(a=>`<tr>
+    <td class="small">${esc(a.timestamp)}</td>
+    <td>${esc(a.username)}</td>
+    <td><span class="chip ${a.role==='super'?'cyan':a.role==='admin'?'orange':'gray'}">${esc(a.role)}</span></td>
+    <td><span class="tag">${esc(a.action)}</span></td>
+    <td>${esc(a.module)}</td>
+    <td class="small">${esc(a.detail||'')}</td>
+  </tr>`).join('') || '<tr><td colspan="6" class="center" style="padding:20px;color:var(--t3)">No audit entries yet</td></tr>';
+  setEl('adm_audit_tbl', `<table class="dt"><thead><tr><th class="no-sort">Timestamp</th><th class="no-sort">User</th><th class="no-sort">Role</th><th class="no-sort">Action</th><th class="no-sort">Module</th><th class="no-sort">Detail</th></tr></thead><tbody>${body}</tbody></table>`);
+}
+function adminAuditExport(){
+  exportXLSX(State.audit.map(a=>[a.timestamp, a.username, a.role, a.action, a.module, a.detail||'']), ['Timestamp','User','Role','Action','Module','Detail'], 'audit_log');
+}
+function adminAuditClear(){
+  if(!confirm('Clear local audit log? Historical entries will be lost.')) return;
+  State.audit = [];
+  try{ localStorage.removeItem('nx_audit'); }catch(e){}
+  toast('Audit cleared','success'); adminRenderAudit();
+}
+
+/* ── 30.4 SYSTEM ─────────────────────────────────────────────────────── */
+function adminRenderSystem(){
+  const stats = [
+    ['App Version', APP_VERSION],
+    ['Supabase URL', SUPABASE_URL==='YOUR_SUPABASE_URL_HERE' ? '⚠️ NOT CONFIGURED' : SUPABASE_URL.replace(/^https?:\/\//,'').slice(0,40)],
+    ['Logged in as', State.user.email + ' (' + State.user.role + ')'],
+    ['Records — Master Facility', NUM(State.master.length)],
+    ['Records — Compliance', NUM(State.compliance.length)],
+    ['Records — Breach RCA', NUM(State.breachRCA.length)],
+    ['Records — Callouts', NUM(State.callouts.length)],
+    ['Records — COD', NUM(State.cod.length)],
+    ['Records — RLH Callouts', NUM(State.rlhCallouts.length)],
+    ['Records — RLH Master', NUM(State.rlhMaster.length)],
+    ['Records — PVA', NUM(State.pva.length)],
+    ['Records — NLH Tracker', NUM(State.nlh.length)],
+    ['DOD Sheets uploaded', NUM(State.dodIndex.length)],
+    ['Audit entries (local)', NUM(State.audit.length)],
+    ['Realtime channels active', NUM(State._channels.length)]
+  ];
+  $('adm_body').innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">System Information</div></div>
+      <div class="card-body no-pad">
+        <table class="dt"><tbody>
+          ${stats.map(s=>`<tr><td style="width:280px;color:var(--t2);font-weight:600">${esc(s[0])}</td><td><b>${esc(s[1])}</b></td></tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Actions</div></div>
+      <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-soft" onclick="loadAllData().then(()=>{ toast('Data refreshed','success'); renderActiveModule(); })">↻ Refresh All Data</button>
+        <button class="btn btn-soft" onclick="subscribeRealtime(); toast('Realtime re-subscribed','success')">🔄 Reconnect Realtime</button>
+        <button class="btn btn-soft" onclick="adminClearLocalCache()">🗑 Clear Local Cache</button>
+      </div>
+    </div>
+  `;
+}
+function adminClearLocalCache(){
+  if(!confirm('Clear localStorage cache (user cache + audit)? You will be logged out.')) return;
+  try{ localStorage.clear(); }catch(e){}
+  toast('Cache cleared','success');
+  setTimeout(()=>location.reload(), 600);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   31. BOOT SEQUENCE
+   ═══════════════════════════════════════════════════════════════════════ */
+async function boot(){
+  loadAudit();
+  tickClock();
+  const ok = initSupabase();
+  if(!ok){
+    $('loginErr').textContent = 'Supabase not configured. Edit SUPABASE_URL and SUPABASE_ANON in the HTML source, then refresh.';
+    $('loginErr').style.display = 'block';
+    return;
+  }
+  // Try restore session
+  const restored = await tryRestoreSession();
+  if(!restored){
+    $('loginScreen').style.display = 'grid';
+    $('loginId').focus();
+  }
+  // Auth state change handler
+  if(sb){
+    sb.auth.onAuthStateChange((event, session)=>{
+      if(event==='SIGNED_OUT' && State.user){ location.reload(); }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+
+</body>
+</html>
