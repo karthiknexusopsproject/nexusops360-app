@@ -206,14 +206,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .badge.ok{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.2)}
 .badge.warn{background:rgba(232,66,58,.15);color:var(--red);border:1px solid rgba(232,66,58,.2)}
 .badge.user{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
-.badge.admin{background:rgba(249,115,22,.2);color:var(--orange);border:1px solid rgba(249,115,22,.25)}
+.badge.admin{background:rgba(59,130,246,.18);color:var(--blue);border:1px solid rgba(59,130,246,.25)}
 .badge.super{background:rgba(232,66,58,.2);color:var(--red);border:1px solid rgba(232,66,58,.25)}
 .badge.inactive{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.2)}
 
 .medal{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:900}
-.m1{background:rgba(251,191,36,.2);color:var(--yellow)}
+.m1{background:rgba(59,130,246,.2);color:var(--blue)}
 .m2{background:rgba(148,163,184,.15);color:#94a3b8}
-.m3{background:rgba(249,115,22,.15);color:var(--orange)}
+.m3{background:rgba(16,185,129,.18);color:var(--green)}
 .mn{background:var(--s2);color:var(--t3);font-size:.58rem}
 .cbar{height:18px;background:var(--s2);border-radius:4px;overflow:hidden;min-width:55px}
 .cbarfill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 5px;font-size:.58rem;font-weight:900;color:#fff}
@@ -771,7 +771,7 @@ body.light-theme .badge{
   font-weight:700;
 }
 body.light-theme .badge.user{ background:#e0e7ff; border-color:#c7d2fe; color:#3730a3; }
-body.light-theme .badge.admin{ background:#fef3c7; border-color:#fde68a; color:#92400e; }
+body.light-theme .badge.admin{ background:#dbeafe; border-color:#bfdbfe; color:#1d4ed8; }
 body.light-theme .badge.super{ background:#fecaca; border-color:#fca5a5; color:#7f1d1d; }
 
 /* SORT PILLS */
@@ -957,15 +957,15 @@ body.light-theme .tb-logoff{
 }
 body.light-theme .tb-logoff:hover{ background:#b91c1c !important; }
 
-/* Theme toggle — yellow soft button when on Light */
+/* Theme toggle — blue soft button when on Light */
 body.light-theme #themeToggleBtn{
-  background:#fef3c7 !important;
-  color:#92400e !important;
-  border:1px solid #fde68a !important;
+  background:#dbeafe !important;
+  color:#1d4ed8 !important;
+  border:1px solid #bfdbfe !important;
   font-weight:700;
   border-radius:8px;
 }
-body.light-theme #themeToggleBtn:hover{ background:#fde68a !important; }
+body.light-theme #themeToggleBtn:hover{ background:#bfdbfe !important; }
 
 /* ──────── TABS — icons with colour + uppercase + blue underline on active ──────── */
 body.light-theme .tabs{
@@ -1249,7 +1249,7 @@ body.light-theme .badge{
   font-size:.65rem;
 }
 body.light-theme .badge.user{ background:#dbeafe; border-color:#bfdbfe; color:#1d4ed8; }
-body.light-theme .badge.admin{ background:#fef3c7; border-color:#fde68a; color:#92400e; }
+body.light-theme .badge.admin{ background:#dbeafe; border-color:#bfdbfe; color:#1d4ed8; }
 body.light-theme .badge.super{ background:#fecaca; border-color:#fca5a5; color:#991b1b; }
 
 /* PVA frozen-col bg in light theme */
@@ -1992,7 +1992,7 @@ body.light-theme .badge.inactive{ background:#fee2e2; color:#b91c1c; border-colo
             <button class="fbtn green-btn" onclick="openRLHModal(null)">+ Add RLH Callout</button>
             <button class="fbtn" onclick="document.getElementById('rlhBulkFile').click()">📥 Bulk Upload</button>
             <input type="file" id="rlhBulkFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkUploadRLH(this)"/>
-            <button class="dl" onclick="downloadRLHTemplate()">📄 Template</button>
+            <button class="dl" onclick="downloadRLHTemplate()">📥 Template</button>
             <button class="dl" onclick="dlRLH_CSV()">⬇ CSV</button>
           </div>
         </div>
@@ -2053,7 +2053,7 @@ body.light-theme .badge.inactive{ background:#fee2e2; color:#b91c1c; border-colo
                 <button class="fbtn green-btn" onclick="openNLHModal(null)">+ Single Entry</button>
                 <button class="fbtn" onclick="document.getElementById('nlhBulkFile').click()">📥 Bulk Upload</button>
                 <input type="file" id="nlhBulkFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkUploadNLH(this)"/>
-                <button class="dl" onclick="downloadNLHTemplate()">📄 Template</button>
+                <button class="dl" onclick="downloadNLHTemplate()">📥 Template</button>
                 <button class="dl" onclick="dlCSV(window.NLH_DATA||[],'nlh_records.csv')">⬇ CSV</button>
               </div>
             </div>
@@ -2136,6 +2136,8 @@ body.light-theme .badge.inactive{ background:#fee2e2; color:#b91c1c; border-colo
             <input type="file" id="pvaBulkFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkUploadPVA(this)"/>
             <button class="dl" onclick="downloadPVATemplate()">📄 Template</button>
             <button class="dl" onclick="exportPVAExcel()">⬇ Excel</button>
+            <button class="fbtn red-btn" id="pvaMultiDelBtn" onclick="deleteSelectedPVA()" style="display:none">🗑 Delete Selected (<span id="pvaMultiCount">0</span>)</button>
+            <button class="fbtn red-btn" id="pvaWipeBtn" onclick="wipeAllPVA()" style="display:none">🧹 Wipe All</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin:6px 0 4px;flex-wrap:wrap;align-items:center">
@@ -2181,6 +2183,8 @@ body.light-theme .badge.inactive{ background:#fee2e2; color:#b91c1c; border-colo
             <input type="file" id="codBulkFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkUploadCOD(this)"/>
             <button class="dl" onclick="downloadCODTemplate()">📄 Template</button>
             <button class="dl" onclick="exportCODExcel()">⬇ Excel</button>
+            <button class="fbtn red-btn" id="codMultiDelBtn" onclick="deleteSelectedCOD()" style="display:none">🗑 Delete Selected (<span id="codMultiCount">0</span>)</button>
+            <button class="fbtn red-btn" id="codWipeBtn" onclick="wipeAllCOD()" style="display:none">🧹 Wipe All</button>
           </div>
         </div>
       </div>
@@ -7486,7 +7490,7 @@ function openRLHModal(id){
     +'<div><div class="llabel">Affected DC <span style="color:var(--cyan);font-size:.6rem">(comma-separated · manual entry)</span></div><input class="linput" id="rlh_dc_manual" value="'+esc(dcText)+'" placeholder="e.g. AG2S, BLR1, CTS, HYD2"/></div>'
     +'<div><div class="llabel">Lane Type</div><select class="lselect" id="rlh_laneType">'+RLH_LANE_TYPES.map(function(t){return '<option'+(t===rec.laneType?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
     +'<div id="rlh_lane_wrap"><div class="llabel">Lane <span id="rlh_lane_hint" style="font-size:.6rem;color:var(--t3)"></span></div><select class="lselect" id="rlh_lane" onchange="rlhLaneChanged()"><option value="">— Select Facility first —</option></select></div>'
-    +'<div><div class="llabel">Shipment Count <span style="color:var(--t3);font-size:.6rem">(was: Affected Qty)</span></div><input type="number" class="linput" id="rlh_affectedQty" value="'+N(rec.affectedQty)+'"/></div>'
+    +'<div><div class="llabel">Affected Qty</div><input type="number" class="linput" id="rlh_affectedQty" value="'+N(rec.affectedQty)+'"/></div>'
     +'<div><div class="llabel">Failure Reason</div><select class="lselect" id="rlh_failureReason" onchange="rlhFailureReasonChanged()"><option value="">— Select —</option>'+RLH_FAILURE_REASONS.map(function(f){return '<option'+(f===rec.failureReason?' selected':'')+'>'+f+'</option>';}).join('')+'</select></div>'
     +'<div><div class="llabel">LH Remarks</div><select class="lselect" id="rlh_lhRemarks"><option value="">— Select —</option>'+RLH_LH_REMARKS.map(function(x){return '<option'+(x===rec.lhRemarks?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'
     +'<div class="full-row"><div class="llabel">Summary / Additional Notes</div><textarea class="linput" id="rlh_summary" rows="2" style="resize:vertical">'+esc(rec.summary||'')+'</textarea></div>'
@@ -7739,6 +7743,144 @@ function bulkUploadRLH(input){
          so we can validate strict DD-MM-YYYY format ourselves. */
       var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array', cellDates:false, raw:true});
       var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'', raw:true});
+      /* v36.5: Validate Failure Reason & LH Remarks against designed lists BEFORE upload.
+         If any invalid values are found, open the auto-correct modal and pause upload. */
+      if(typeof rlhValidateAndCorrect === 'function'){
+        var invalidMap = rlhCollectInvalidValues(rows);
+        if(invalidMap.failure.length || invalidMap.remarks.length){
+          rlhOpenAutoCorrectModal(invalidMap, rows, function(correctedRows){
+            _rlhDoBulkUpload(correctedRows, input);
+          });
+          return;
+        }
+      }
+      _rlhDoBulkUpload(rows, input);
+    }catch(e){toast('Upload error: '+e.message,'var(--red)');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* v36.5: collect distinct invalid Failure Reason / LH Remarks values from the upload rows */
+function rlhCollectInvalidValues(rows){
+  var validFR = (typeof RLH_FAILURE_REASONS!=='undefined') ? RLH_FAILURE_REASONS : [];
+  var validLH = (typeof RLH_LH_REMARKS!=='undefined') ? RLH_LH_REMARKS : [];
+  var frBad = {}, lhBad = {};
+  rows.forEach(function(r){
+    var fr = String(r.failureReason||r['Failure Reason']||'').trim();
+    var lh = String(r.lhRemarks||r['LH Remarks']||'').trim();
+    if(fr && validFR.indexOf(fr)<0) frBad[fr] = true;
+    if(lh && validLH.indexOf(lh)<0) lhBad[lh] = true;
+  });
+  return { failure: Object.keys(frBad), remarks: Object.keys(lhBad) };
+}
+
+/* v36.5: best-effort closest-match suggestion (substring / token overlap) */
+function rlhSuggestMatch(bad, validList){
+  if(!bad) return '';
+  var b = bad.toLowerCase().trim();
+  /* exact case-insensitive */
+  for(var i=0;i<validList.length;i++){ if(validList[i].toLowerCase()===b) return validList[i]; }
+  /* substring either direction */
+  for(var j=0;j<validList.length;j++){
+    var v = validList[j].toLowerCase();
+    if(v.indexOf(b)>=0 || b.indexOf(v)>=0) return validList[j];
+  }
+  /* token overlap score */
+  var bTokens = b.split(/[^a-z0-9]+/).filter(Boolean);
+  var best='', bestScore=0;
+  validList.forEach(function(v){
+    var vTokens = v.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    var score = bTokens.filter(function(t){return vTokens.indexOf(t)>=0;}).length;
+    if(score>bestScore){ bestScore=score; best=v; }
+  });
+  return bestScore>0 ? best : '';
+}
+
+/* v36.5: open the auto-correct modal — maps every invalid value to a valid designed value */
+function rlhOpenAutoCorrectModal(invalidMap, rows, onApply){
+  var validFR = (typeof RLH_FAILURE_REASONS!=='undefined') ? RLH_FAILURE_REASONS : [];
+  var validLH = (typeof RLH_LH_REMARKS!=='undefined') ? RLH_LH_REMARKS : [];
+  if(!document.getElementById('rlhFixModal')){
+    var ov=document.createElement('div'); ov.className='modal-overlay'; ov.id='rlhFixModal';
+    ov.innerHTML='<div class="modal" style="max-width:680px"><div class="modal-title">⚠ RLH Upload — Correct Invalid Values <button class="modal-close" onclick="closeModal(\'rlhFixModal\')">×</button></div><div id="rlhFixModalBody"></div></div>';
+    document.body.appendChild(ov);
+  }
+  function row(label, badVal, validList, idPrefix, idx){
+    var suggested = rlhSuggestMatch(badVal, validList);
+    var opts = '<option value="">— Select correct value —</option>' + validList.map(function(v){
+      return '<option value="'+esc(v)+'"'+(v===suggested?' selected':'')+'>'+esc(v)+'</option>';
+    }).join('');
+    return '<tr>'
+      + '<td style="font-size:.7rem;color:var(--red);font-weight:700">'+esc(badVal)+'</td>'
+      + '<td><select class="lselect" id="'+idPrefix+idx+'" style="width:100%;font-size:.72rem">'+opts+'</select></td>'
+      + '</tr>';
+  }
+  var html = '<div style="font-size:.72rem;color:var(--t2);margin-bottom:10px">Some rows have values not in the designed list. Choose the correct value for each. Suggested matches are pre-selected.</div>';
+  if(invalidMap.failure.length){
+    html += '<div style="font-weight:900;font-size:.74rem;margin:8px 0 4px;color:var(--cyan)">🔴 Failure Reason — invalid values found</div>';
+    html += '<table class="dt" style="width:100%"><thead><tr><th style="width:50%">Found in file</th><th>Replace with</th></tr></thead><tbody>';
+    invalidMap.failure.forEach(function(bad,i){ html += row('Failure Reason', bad, (typeof RLH_FAILURE_REASONS!=='undefined'?RLH_FAILURE_REASONS:[]), 'rlhFix_fr_', i); });
+    html += '</tbody></table>';
+  }
+  if(invalidMap.remarks.length){
+    html += '<div style="font-weight:900;font-size:.74rem;margin:12px 0 4px;color:var(--cyan)">📝 LH Remarks — invalid values found</div>';
+    html += '<table class="dt" style="width:100%"><thead><tr><th style="width:50%">Found in file</th><th>Replace with</th></tr></thead><tbody>';
+    invalidMap.remarks.forEach(function(bad,i){ html += row('LH Remarks', bad, (typeof RLH_LH_REMARKS!=='undefined'?RLH_LH_REMARKS:[]), 'rlhFix_lh_', i); });
+    html += '</tbody></table>';
+  }
+  html += '<div style="display:flex;gap:8px;margin-top:14px">'
+       + '<button class="lbtn" style="background:linear-gradient(135deg,var(--green),#059669);flex:1" onclick="rlhApplyAutoCorrect()">✓ Apply & Upload</button>'
+       + '<button class="lbtn" style="background:var(--s2);color:var(--t2);flex:0 0 110px" onclick="closeModal(\'rlhFixModal\');document.getElementById(\'rlhBulkFile\').value=\'\'">Cancel</button>'
+       + '</div>';
+  setEl('rlhFixModalBody', html);
+  /* stash state for apply handler */
+  window._rlhFixState = { invalidMap: invalidMap, rows: rows, onApply: onApply };
+  document.getElementById('rlhFixModal').classList.add('show');
+}
+
+window.rlhApplyAutoCorrect = function(){
+  var st = window._rlhFixState; if(!st){ closeModal('rlhFixModal'); return; }
+  var frMap = {}, lhMap = {};
+  /* ensure every invalid value got a replacement */
+  for(var i=0;i<st.invalidMap.failure.length;i++){
+    var el = document.getElementById('rlhFix_fr_'+i);
+    var v = el ? el.value : '';
+    if(!v){ toast('Select correct value for Failure Reason: '+st.invalidMap.failure[i],'var(--red)'); return; }
+    frMap[st.invalidMap.failure[i]] = v;
+  }
+  for(var j=0;j<st.invalidMap.remarks.length;j++){
+    var el2 = document.getElementById('rlhFix_lh_'+j);
+    var v2 = el2 ? el2.value : '';
+    if(!v2){ toast('Select correct value for LH Remarks: '+st.invalidMap.remarks[j],'var(--red)'); return; }
+    lhMap[st.invalidMap.remarks[j]] = v2;
+  }
+  /* apply corrections to every row */
+  st.rows.forEach(function(r){
+    var fr = String(r.failureReason||r['Failure Reason']||'').trim();
+    if(fr && frMap[fr]){
+      if(r['Failure Reason']!==undefined) r['Failure Reason'] = frMap[fr];
+      if(r.failureReason!==undefined) r.failureReason = frMap[fr];
+      if(r['Failure Reason']===undefined && r.failureReason===undefined) r['Failure Reason'] = frMap[fr];
+    }
+    var lh = String(r.lhRemarks||r['LH Remarks']||'').trim();
+    if(lh && lhMap[lh]){
+      if(r['LH Remarks']!==undefined) r['LH Remarks'] = lhMap[lh];
+      if(r.lhRemarks!==undefined) r.lhRemarks = lhMap[lh];
+      if(r['LH Remarks']===undefined && r.lhRemarks===undefined) r['LH Remarks'] = lhMap[lh];
+    }
+  });
+  closeModal('rlhFixModal');
+  toast('Corrections applied — uploading…','var(--green)');
+  st.onApply(st.rows);
+  window._rlhFixState = null;
+};
+
+/* dummy reference so the optional-call guard above doesn't choke */
+function rlhValidateAndCorrect(){ return true; }
+
+/* v36.5: extracted from bulkUploadRLH — the actual upload pipeline */
+function _rlhDoBulkUpload(rows, input){
+  try{
       var added=0, dateErr=0, otherErr=0, missingDS=0;
       var dateErrSamples = [];
       rows.forEach(function(r, idx){
@@ -7801,24 +7943,25 @@ function bulkUploadRLH(input){
       var toastMsg = 'RLH upload · '+added+' added · '+dateErr+' date errors · '+otherErr+' other skipped';
       if(missingDS) toastMsg += ' · '+missingDS+' without Date & Shift (fill via Edit later)';
       toast(toastMsg, dateErr?'var(--red)':(missingDS?'var(--yellow)':'var(--green)'));
-      renderRLH(); input.value='';
+      renderRLH(); if(input) input.value='';
     }catch(e){toast('Upload error: '+e.message,'var(--red)');}
-  };
-  reader.readAsArrayBuffer(file);
 }
 
 function downloadRLHTemplate(){
-  /* v35.4.2: Date column MUST be DD-MM-YYYY. Make this unambiguous in the
-     sample so Excel doesn't silently reformat. Date & Shift stays manual. */
+  /* v36.5: Column order & headers match the agreed spec exactly:
+     Date · Date & Shift · Facility · Type · Lane Type · Lane · Affected DC ·
+     Affected Qty · Failure Reason · LH Remarks
+     Date must be DD-MM-YYYY (Excel-safe text). Bulk-upload accepts both new
+     and legacy aliases ("Facility Code / Origin", "Shipment Count"). */
   var sample = {
     'Date':'15-01-2026',
     'Date & Shift':'15-01-2026-Night',
-    'Facility Code / Origin':'BLR-FM-01',
+    'Facility':'BLR-FM-01',
     'Type':'FM-CD',
-    'Affected DC':'HYD, MUM',
     'Lane Type':'RLH',
     'Lane':'BLR-HYD-MUM-DEL',
-    'Shipment Count':150,
+    'Affected DC':'HYD, MUM',
+    'Affected Qty':150,
     'Failure Reason':'Spillover',
     'LH Remarks':'Spillover - Vehicle Size'
   };
@@ -7923,6 +8066,10 @@ function getCODMatrixFiltered(){
 function renderCOD(){
   var d = getCODMatrixFiltered();
 
+  /* v36.5: gate Wipe All to super admin */
+  var wb = document.getElementById('codWipeBtn');
+  if(wb) wb.style.display = (typeof currentUser!=='undefined' && currentUser && currentUser.role==='super') ? 'inline-flex' : 'none';
+
   // Date columns (latest first)
   var dateSet={}; d.forEach(function(r){ if(r.date) dateSet[r.date]=1; });
   var dates = Object.keys(dateSet).sort(function(a,b){return b.localeCompare(a);});
@@ -7949,7 +8096,7 @@ function renderCOD(){
   // KPI cards (counts only — no % or compliance)
   var totCount = rows.reduce(function(s,r){return s+r.totCount;},0);
   setEl('codKPI',
-    '<div class="kpi yellow"><div class="klabel">Total COD Count</div><div class="kval yellow">'+NUM(totCount)+'</div><div class="ksub">'+dates.length+' day(s) · '+rows.length+' SC</div></div>'
+    '<div class="kpi blue"><div class="klabel">Total COD Count</div><div class="kval blue">'+NUM(totCount)+'</div><div class="ksub">'+dates.length+' day(s) · '+rows.length+' SC</div></div>'
     +'<div class="kpi blue"><div class="klabel">SC with COD</div><div class="kval blue">'+rows.length+'</div></div>'
     +'<div class="kpi cyan"><div class="klabel">Days covered</div><div class="kval cyan">'+dates.length+'</div></div>'
   );
@@ -7962,8 +8109,9 @@ function renderCOD(){
     return;
   }
 
-  // Header: 3 frozen + dynamic date columns
+  // Header: 1 select-col + 3 frozen + dynamic date columns
   var head='<tr>'
+    +'<th style="width:30px"><input type="checkbox" id="codSelectAllRow" onchange="toggleAllCODSelect(this)"/></th>'
     +'<th class="mx-frz mx-c0">SC Type</th>'
     +'<th class="mx-frz mx-c1">SC</th>'
     +'<th class="mx-frz mx-c2cod">RH</th>'
@@ -7976,17 +8124,69 @@ function renderCOD(){
   setEl('codMatrixBody', rows.map(function(s){
     var cells=dates.map(function(dt){
       var c=s.cells[dt]||0;
-      return '<td class="mono '+(c>0?'vyellow':'t2')+'" style="border-left:1px solid var(--border);text-align:center">'+(c>0?NUM(c):'—')+'</td>';
+      return '<td class="mono '+(c>0?'vblue':'t2')+'" style="border-left:1px solid var(--border);text-align:center">'+(c>0?NUM(c):'—')+'</td>';
     }).join('');
-    return '<tr><td class="mx-frz mx-c0"><span class="badge user">'+esc(s.type)+'</span></td>'
+    return '<tr><td><input type="checkbox" class="cod-row-cb" value="'+esc(s.fac)+'" onchange="updateCODMultiCount()"/></td>'
+      +'<td class="mx-frz mx-c0"><span class="badge user">'+esc(s.type)+'</span></td>'
       +'<td class="mx-frz mx-c1"><b style="cursor:pointer;color:var(--cyan)" onclick="codDrillDown(\''+esc(s.fac)+'\')">'+esc(s.fac)+'</b></td>'
       +'<td class="mx-frz mx-c2cod t2">'+esc(s.rh)+'</td>'
-      +'<td class="mx-frz mx-c3cod mono vyellow" style="font-weight:800">'+NUM(s.totCount)+'</td>'
+      +'<td class="mx-frz mx-c3cod mono vblue" style="font-weight:800">'+NUM(s.totCount)+'</td>'
       + cells +'</tr>';
   }).join(''));
 
+  /* clear any prior selection */
+  setEl('codMultiCount','0');
+  var mb=document.getElementById('codMultiDelBtn'); if(mb) mb.style.display='none';
+
   var box=document.getElementById('codDrillBox'); if(box){box.style.display='none';box.innerHTML='';}
 }
+
+/* v36.5: COD multi-select & wipe */
+window.toggleAllCODSelect = function(cb){
+  document.querySelectorAll('.cod-row-cb').forEach(function(x){ x.checked = cb.checked; });
+  updateCODMultiCount();
+};
+window.updateCODMultiCount = function(){
+  var n = document.querySelectorAll('.cod-row-cb:checked').length;
+  setEl('codMultiCount', n);
+  var b = document.getElementById('codMultiDelBtn'); if(b) b.style.display = n>0 ? 'inline-flex' : 'none';
+};
+window.deleteSelectedCOD = function(){
+  var facs = Array.from(document.querySelectorAll('.cod-row-cb:checked')).map(function(x){return x.value;});
+  if(!facs.length) return;
+  var facSet = {}; facs.forEach(function(f){ facSet[f]=true; });
+  var toDel = (COD_DATA||[]).filter(function(r){ return facSet[r.facility]; });
+  if(!toDel.length) return;
+  if(!confirm('Delete '+toDel.length+' COD record(s) across '+facs.length+' SC(s)? This cannot be undone.')) return;
+  toDel.forEach(function(r){
+    try{ if(typeof fbDel==='function') fbDel('codData', r._id); }catch(e){}
+  });
+  COD_DATA = COD_DATA.filter(function(r){ return !facSet[r.facility]; });
+  saveLocal();
+  if(typeof logAudit==='function') logAudit('delete','COD','Bulk delete · '+toDel.length+' records · '+facs.length+' SC');
+  toast('Deleted '+toDel.length+' COD records','var(--orange)');
+  renderCOD();
+  if(typeof recalcAll==='function') recalcAll();
+};
+window.wipeAllCOD = function(){
+  if(!currentUser || currentUser.role!=='super'){ toast('Only Super Admin can wipe data','var(--red)'); return; }
+  if(!COD_DATA.length){ toast('Nothing to wipe','var(--orange)'); return; }
+  if(!confirm('⚠️ WIPE ALL '+COD_DATA.length+' COD records? This cannot be undone.')) return;
+  if(!confirm('FINAL CHECK — really delete every COD record?')) return;
+  COD_DATA = [];
+  saveLocal();
+  if(typeof fbWipe==='function'){
+    fbWipe('codData').then(function(){
+      toast('All COD wiped','var(--orange)');
+      if(typeof logAudit==='function') logAudit('wipe','COD','All records');
+      renderCOD();
+      if(typeof recalcAll==='function') recalcAll();
+    });
+  } else {
+    toast('All COD wiped (local only)','var(--orange)');
+    renderCOD();
+  }
+};
 function codDrillDown(facility){
   var recs=COD_DATA.filter(function(r){return norm(r.facility)===norm(facility);}).sort(function(a,b){return b.date.localeCompare(a.date);});
   var box=document.getElementById('codDrillBox'); if(!box)return;
@@ -8698,6 +8898,10 @@ window.addEventListener('DOMContentLoaded', function(){
   window.renderPVA = function(){
     var d = getPVAFiltered();
 
+    /* v36.5: gate Wipe All to super admin */
+    var wb = document.getElementById('pvaWipeBtn');
+    if(wb) wb.style.display = (typeof currentUser!=='undefined' && currentUser && currentUser.role==='super') ? 'inline-flex' : 'none';
+
     // Build date list (unique), latest first
     var dateSet = {};
     d.forEach(function(r){ if(r.date) dateSet[r.date]=1; });
@@ -8735,9 +8939,9 @@ window.addEventListener('DOMContentLoaded', function(){
     var top = rows.length?rows.slice().sort(function(a,b){return b.overallPva-a.overallPva;})[0]:null;
     var low = rows.length?rows.slice().sort(function(a,b){return a.overallPva-b.overallPva;})[0]:null;
     setEl('pvaKPI',
-      '<div class="kpi yellow"><div class="klabel">Total Plan</div><div class="kval yellow">'+NUM(totPlan)+'</div><div class="ksub">'+dates.length+' day(s) · '+rows.length+' SC</div></div>'
+      '<div class="kpi blue"><div class="klabel">Total Plan</div><div class="kval blue">'+NUM(totPlan)+'</div><div class="ksub">'+dates.length+' day(s) · '+rows.length+' SC</div></div>'
       +'<div class="kpi cyan"><div class="klabel">Total Actual</div><div class="kval cyan">'+NUM(totAct)+'</div></div>'
-      +'<div class="kpi '+(overall>=90?'green':overall>=80?'yellow':'red')+'"><div class="klabel">Overall PvA %</div><div class="kval '+(overall>=90?'green':overall>=80?'yellow':'red')+'">'+overall.toFixed(1)+'%</div></div>'
+      +'<div class="kpi '+(overall>=90?'green':overall>=80?'blue':'red')+'"><div class="klabel">Overall PvA %</div><div class="kval '+(overall>=90?'green':overall>=80?'blue':'red')+'">'+overall.toFixed(1)+'%</div></div>'
       +(top?'<div class="kpi green"><div class="klabel">🏆 Top SC</div><div class="kval green" style="font-size:1.1rem">'+esc(top.fac)+'</div><div class="ksub">'+top.overallPva.toFixed(1)+'%</div></div>':'')
       +(low&&rows.length>1?'<div class="kpi red"><div class="klabel">🚨 Lowest SC</div><div class="kval red" style="font-size:1.1rem">'+esc(low.fac)+'</div><div class="ksub">'+low.overallPva.toFixed(1)+'%</div></div>':'')
     );
@@ -8751,8 +8955,9 @@ window.addEventListener('DOMContentLoaded', function(){
       return;
     }
 
-    // ── Header: fixed cols + 3 sub-cols per date ──
+    // ── Header: select-col + fixed cols + 3 sub-cols per date ──
     var head = '<tr>'
+      +'<th rowspan="2" style="width:30px"><input type="checkbox" id="pvaSelectAllRow" onchange="toggleAllPVASelect(this)"/></th>'
       +'<th rowspan="2" class="mx-frz mx-c0">SC Type</th>'
       +'<th rowspan="2" class="mx-frz mx-c1">SC</th>'
       +'<th rowspan="2" class="mx-frz mx-c2">RH</th>'
@@ -8770,11 +8975,12 @@ window.addEventListener('DOMContentLoaded', function(){
       var cells = dates.map(function(dt){
         var c = s.cells[dt];
         if(!c) return '<td class="t2" style="border-left:1px solid var(--border)">—</td><td class="t2">—</td><td class="t2">—</td>';
-        return '<td class="mono vyellow" style="border-left:1px solid var(--border)">'+NUM(c.plan)+'</td>'
+        return '<td class="mono vblue" style="border-left:1px solid var(--border)">'+NUM(c.plan)+'</td>'
              +'<td class="mono vcyan">'+NUM(c.act)+'</td>'
              +'<td class="mono '+achClass(c.pva)+'">'+c.pva.toFixed(0)+'%</td>';
       }).join('');
       return '<tr class="'+(s.overallPva>=90?'good-row':s.overallPva<80?'bad-row':'')+'">'
+        +'<td><input type="checkbox" class="pva-row-cb" value="'+esc(s.fac)+'" onchange="updatePVAMultiCount()"/></td>'
         +'<td class="mx-frz mx-c0"><span class="badge user">'+esc(s.type)+'</span></td>'
         +'<td class="mx-frz mx-c1"><b style="cursor:pointer;color:var(--cyan)" onclick="pvaDrillDown(\''+esc(s.fac)+'\')">'+esc(s.fac)+'</b>'
           +(canEdit?' <button class="dl edit" style="padding:1px 5px" onclick="openPVAModal(\''+esc(s.fac)+'\',null)">+</button>':'')+'</td>'
@@ -8784,6 +8990,10 @@ window.addEventListener('DOMContentLoaded', function(){
         + cells
         +'</tr>';
     }).join(''));
+
+    /* clear any prior selection */
+    setEl('pvaMultiCount','0');
+    var mb=document.getElementById('pvaMultiDelBtn'); if(mb) mb.style.display='none';
 
     var box=document.getElementById('pvaDrillBox'); if(box){box.style.display='none';box.innerHTML='';}
 
@@ -8886,6 +9096,52 @@ window.addEventListener('DOMContentLoaded', function(){
     renderPVA();
   };
   window.deletePVARec = function(id){var i=(window.PVA_DATA||[]).findIndex(function(x){return x._id===id;});if(i<0){toast('Not found','var(--red)');return;}if(!confirm('Delete this PVA record?'))return;fbPVADel(window.PVA_DATA[i]._id);window.PVA_DATA.splice(i,1);savePVALocal();toast('Deleted','var(--orange)');renderPVA();};
+
+  /* v36.5: PVA multi-select + wipe */
+  window.toggleAllPVASelect = function(cb){
+    document.querySelectorAll('.pva-row-cb').forEach(function(x){ x.checked = cb.checked; });
+    window.updatePVAMultiCount();
+  };
+  window.updatePVAMultiCount = function(){
+    var n = document.querySelectorAll('.pva-row-cb:checked').length;
+    setEl('pvaMultiCount', n);
+    var b = document.getElementById('pvaMultiDelBtn'); if(b) b.style.display = n>0 ? 'inline-flex' : 'none';
+  };
+  window.deleteSelectedPVA = function(){
+    var facs = Array.from(document.querySelectorAll('.pva-row-cb:checked')).map(function(x){return x.value;});
+    if(!facs.length) return;
+    var facSet = {}; facs.forEach(function(f){ facSet[f]=true; });
+    var toDel = (window.PVA_DATA||[]).filter(function(r){ return facSet[r.facility]; });
+    if(!toDel.length) return;
+    if(!confirm('Delete '+toDel.length+' PVA record(s) across '+facs.length+' SC(s)? This cannot be undone.')) return;
+    toDel.forEach(function(r){
+      try{ fbPVADel(r._id); }catch(e){}
+    });
+    window.PVA_DATA = (window.PVA_DATA||[]).filter(function(r){ return !facSet[r.facility]; });
+    savePVALocal();
+    if(typeof logAudit==='function') logAudit('delete','PVA','Bulk delete · '+toDel.length+' records · '+facs.length+' SC');
+    toast('Deleted '+toDel.length+' PVA records','var(--orange)');
+    renderPVA();
+  };
+  window.wipeAllPVA = function(){
+    if(typeof currentUser==='undefined' || !currentUser || currentUser.role!=='super'){ toast('Only Super Admin can wipe data','var(--red)'); return; }
+    var total = (window.PVA_DATA||[]).length;
+    if(!total){ toast('Nothing to wipe','var(--orange)'); return; }
+    if(!confirm('⚠️ WIPE ALL '+total+' PVA records? This cannot be undone.')) return;
+    if(!confirm('FINAL CHECK — really delete every PVA record?')) return;
+    window.PVA_DATA = [];
+    savePVALocal();
+    if(typeof fbWipe==='function'){
+      fbWipe('pvaData').then(function(){
+        toast('All PVA wiped','var(--orange)');
+        if(typeof logAudit==='function') logAudit('wipe','PVA','All records');
+        renderPVA();
+      });
+    } else {
+      toast('All PVA wiped (local only)','var(--orange)');
+      renderPVA();
+    }
+  };
 
   window.bulkUploadPVA = function(input){
     var file=input.files[0]; if(!file)return;
@@ -9786,7 +10042,7 @@ window.bulkUploadNLH = function(input){
         }
         var rec={
           landingDate: ld, landingTime: landingTime,
-          vehicleNo: S(r['Vehicle Number']||r['Vehicle No']||r.vehicleNo).toUpperCase(),
+          vehicleNo: S(r['Vehicle No']||r['Vehicle Number']||r.vehicleNo).toUpperCase(),
           origin: o, destination: d, lane: lane,
           tat: tat,
           landingDateTime: landingDT ? fmtDT(landingDT) : '',
@@ -9823,15 +10079,18 @@ window.bulkUploadNLH = function(input){
 };
 
 window.downloadNLHTemplate = function(){
+  /* v36.5: ONLY user-input columns. Landing Time / Lane / TAT Hrs / Design Arrival / Delay / Bucket / Veh Size auto-populate from NLH Master after upload. */
   if(typeof dlCSV==='function')
     dlCSV([{
-      'Landing Date':'2026-05-01','Landing Time':'06:00',
-      'Vehicle Number':'KA01AB1234',
-      Origin:'DGS1', Destination:'CTS', Lane:'DGS1-CTS',
-      'TAT Hrs':65, Transporter:'Delhivery',
-      'Arrival Date':'2026-05-04','Actual Arrival Time':'15:00',
-      Impact:'Partial Impact', 'Impact Count':12,
-      'Vehicle Size':'32ft','LH Reason':'Traffic Jam'
+      'Landing Date':'2026-05-01',
+      'Vehicle No':'KA01AB1234',
+      Origin:'DGS1',
+      Destination:'CTS',
+      Transporter:'Delhivery',
+      'Arrival Date':'2026-05-04',
+      'Arrival Time':'15:00',
+      Impact:'Partial Impact',
+      'Impact Count':12
     }],'nlh_template.csv');
 };
 
@@ -11850,9 +12109,120 @@ body.light-theme .nxv-foot{ border-top-color:#e2e8f0; }
   display:none;
 }
 #nxUploadSummary.show{ display:block; }
-#nxUploadSummary.warn{ background:#78350f; color:#fde68a; border-color:#b45309; }
+#nxUploadSummary.warn{ background:#1e3a8a; color:#bfdbfe; border-color:#3b82f6; }
 body.light-theme #nxUploadSummary{ background:#d1fae5; color:#064e3b; border-color:#10b981; }
-body.light-theme #nxUploadSummary.warn{ background:#fef3c7; color:#78350f; border-color:#f59e0b; }
+body.light-theme #nxUploadSummary.warn{ background:#dbeafe; color:#1e3a8a; border-color:#3b82f6; }
+
+/* ═════════════════════════════════════════════════════════════════════
+   v36.5 FINAL CONSOLIDATION (loads last — overrides all prior rules)
+   1) THEME PARITY: identical font / size / padding / alignment in both
+      light and dark themes (only color differs across themes).
+   2) BROWN → BLUE/GREEN: light-theme amber-700 / orange-700 tones now
+      render as non-brown blue/teal/green substitutes in dashboard /
+      ranking / badge contexts.
+   3) FILTER BAR: heading + box font/size bumped one size up.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── (1) THEME PARITY ─ Tabs / KPI / labels: identical dimensions ── */
+body.light-theme .tab{
+  padding:13px 16px !important;
+  font-family:var(--hd) !important;
+  font-size:.82rem !important;
+  letter-spacing:.8px !important;
+  font-weight:normal !important;
+  border-bottom:2px solid transparent !important;
+}
+body.light-theme .tab.active{
+  border-bottom:2px solid var(--red) !important;
+  color:var(--red) !important;
+  background:transparent !important;
+}
+body.light-theme .kpi{
+  padding:14px 16px !important;
+  border-radius:var(--radius) !important;
+}
+body.light-theme .klabel{
+  font-size:.58rem !important;
+  font-weight:900 !important;
+  letter-spacing:1px !important;
+  text-transform:uppercase !important;
+  margin-bottom:7px !important;
+}
+body.light-theme .kval{
+  font-family:var(--hd) !important;
+  font-size:1.65rem !important;
+  letter-spacing:.5px !important;
+  line-height:1 !important;
+  margin-bottom:3px !important;
+  margin-top:0 !important;
+  font-weight:normal !important;
+}
+body.light-theme .ksub{
+  font-size:.65rem !important;
+  font-weight:normal !important;
+  margin-top:0 !important;
+}
+
+/* ── (2) BROWN → BLUE/GREEN ── Replace amber-700 / orange-700 with non-brown
+       hues in light theme. Tables, KPIs, ranking, badges all benefit.       */
+body.light-theme{
+  --yellow:#0284c7 !important;   /* sky-600 — was #a16207 brown */
+  --orange:#0891b2 !important;   /* cyan-600 — was #c2410c brown */
+}
+body.light-theme .kval.yellow,
+body.light-theme .vyellow{color:#0284c7 !important}
+body.light-theme .kval.orange,
+body.light-theme .vorange{color:#0891b2 !important}
+
+/* Dark theme KPI "yellow" used in many cards still reads as a soft gold;
+   that is fine. We only neutralise brown spots in light theme above.       */
+
+/* Heatmap brown tints in light theme — soften to non-brown */
+body.light-theme .heatcell.hc1{ background:#bfdbfe; color:#1e3a8a; }
+body.light-theme .heatcell.hc2{ background:#a5b4fc; color:#312e81; }
+
+/* Edit icon (.dl.edit) used yellow → use blue in light theme to avoid brown text */
+body.light-theme .dl.edit{ color:#1d4ed8 !important; border-color:rgba(29,78,216,.3) !important; }
+
+/* ── (3) FILTER BAR — heading + box size bumped one size up ── */
+.fbar-title,
+body.light-theme .fbar-title{
+  font-size:.74rem !important;
+  letter-spacing:1.1px !important;
+}
+.fbar .flabel,
+.fbar .fg .flabel,
+body.light-theme .fbar .flabel,
+body.light-theme .fbar .fg .flabel{
+  font-size:11px !important;
+  letter-spacing:.45px !important;
+}
+.fbar .fg,
+body.light-theme .fbar .fg{
+  min-width:100px !important;
+  max-width:160px !important;
+}
+.fbar .ms-wrap,
+body.light-theme .fbar .ms-wrap{
+  min-width:100px !important;
+  max-width:160px !important;
+}
+.fbar .finput,
+.fbar .fsel,
+.fbar .ms-trigger,
+body.light-theme .fbar .finput,
+body.light-theme .fbar .fsel,
+body.light-theme .fbar .ms-trigger{
+  font-size:.78rem !important;
+  padding:6px 10px !important;
+  min-height:32px !important;
+  height:32px !important;
+}
+.ms-trigger .ms-label,
+body.light-theme .ms-trigger .ms-label{
+  max-width:96px !important;
+  font-size:.78rem !important;
+}
 
 </style>
 
