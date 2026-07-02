@@ -2448,6 +2448,39 @@ body.light-theme .badge.inactive{ background:#fee2e2; color:#b91c1c; border-colo
         <div style="margin-top:14px"><div class="ct" style="margin-bottom:10px;font-size:.85rem">Setup Steps</div><div id="backendSteps" style="display:grid;gap:8px"></div></div>
       </div>
 
+        <div class="admin-section-head"><span class="admin-step">📋</span><div><div class="admin-section-title">Audit Trail</div><div class="admin-section-sub">Who uploaded, edited, or deleted records — visible to Admin &amp; Super Admin</div></div></div>
+        <div class="card card-accent orange" style="margin-top:14px">
+        <div class="ch"><div><div class="ct">📋 Audit Trail</div><div class="cs" id="auditCount">Loading…</div></div>
+          <div class="ch-actions">
+            <input class="finput" id="auditSearch" placeholder="🔍 Search user / module / detail…" style="min-width:200px" oninput="renderAuditLogs()"/>
+            <select class="fsel" id="auditActionFilter" onchange="renderAuditLogs()">
+              <option value="">Upload · Edit · Delete</option>
+              <option value="add">Add only</option>
+              <option value="edit">Edit only</option>
+              <option value="delete">Delete only</option>
+              <option value="bulk-upload">Bulk Upload only</option>
+              <option value="bulk-delete">Bulk Delete only</option>
+              <option value="wipe">Wipe only</option>
+              <option value="all">All actions (incl. login/activate etc.)</option>
+            </select>
+            <button class="dl" onclick="exportAuditLogs()">⬇ Excel</button>
+          </div>
+        </div>
+        <div class="tw"><table class="dt"><thead><tr>
+          <th>Timestamp</th><th>User ID</th><th>Username</th><th>Role</th><th>Action</th><th>Module</th><th>Detail</th>
+        </tr></thead><tbody id="auditLogBody"><tr><td colspan="7" style="text-align:center;padding:18px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      </div>
+
+        <div class="admin-section-head super-only-section" id="adminSuperHead-online"><span class="admin-step">🟢</span><div><div class="admin-section-title">Who's Online</div><div class="admin-section-sub">Active in the last 10 minutes · Super Admin only</div></div></div>
+        <div class="card card-accent green super-only-section" id="adminSuperCard-online" style="margin-top:14px">
+        <div class="ch"><div><div class="ct">🟢 Who's Online</div><div class="cs" id="onlineCount">Loading…</div></div>
+          <div class="ch-actions"><button class="fbtn" onclick="loadOnlineUsers().then(renderOnlineUsers)">🔄 Refresh</button></div>
+        </div>
+        <div class="tw"><table class="dt"><thead><tr>
+          <th>User</th><th>Mobile / Email</th><th>Role</th><th>Last Active</th><th>Status</th>
+        </tr></thead><tbody id="onlineUsersBody"><tr><td colspan="5" style="text-align:center;padding:18px;color:var(--t2)">Loading…</td></tr></tbody></table></div>
+      </div>
+
         <div class="admin-section-head"><span class="admin-step">🛣</span><div><div class="admin-section-title">NLH Lane Master Data</div><div class="admin-section-sub">Origin · Destination · Lane · TAT (hrs) · Landing Time · Vehicle Size</div></div></div>
         <div class="card card-accent cyan" style="margin-bottom:14px">
           <div class="ch">
@@ -2559,8 +2592,12 @@ var USERS = [];
 var MASTER = [];       // {_id, facility, type, zone, rh, ch, zh, partner}
 var AUDIT_LOGS = [];
 function logAudit(action, module, detail){
-  /* v30: Audit logs are localStorage-only — NO Firebase writes.
-     Capacity: last 2000 in-memory, last 1000 persisted across sessions. */
+  /* v35.7: Audit logs are now ALSO synced to Supabase (collection
+     'auditLogs') so Admin/Super Admin can see who uploaded, edited, or
+     deleted records from ANY device — not just the browser they're
+     currently using. One write per action (not a live subscription), so
+     this stays cheap on the Supabase free tier. Local copy is still kept
+     for instant display + offline fallback. */
   try{
     var entry = {
       _id: 'audit_'+Date.now()+'_'+Math.floor(Math.random()*9999),
@@ -2577,7 +2614,24 @@ function logAudit(action, module, detail){
     if(AUDIT_LOGS.length>2000) AUDIT_LOGS = AUDIT_LOGS.slice(0,2000);
     // localStorage persistence — keep last 1000 entries (was 500)
     try{ localStorage.setItem('nx_audit', JSON.stringify(AUDIT_LOGS.slice(0,1000))); }catch(e){}
+    if(typeof fbSet==='function') fbSet('auditLogs', entry._id, entry);
   }catch(e){ console.warn('[audit]',e.message); }
+}
+/* Pulls the full cross-device audit history from Supabase. Called on demand
+   (Admin Panel open), not continuously, to keep read usage low. */
+function loadAuditLogsFromCloud(){
+  if(!fbReady || !db) return Promise.resolve();
+  return db.collection('auditLogs').get().then(function(snap){
+    var rows = [];
+    snap.forEach(function(d){ rows.push(Object.assign({_id:d.id}, d.data())); });
+    rows.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    // Merge with local (cloud is source of truth, but keep anything local-only e.g. offline actions)
+    var seen = {}; rows.forEach(function(r){ seen[r._id]=1; });
+    (AUDIT_LOGS||[]).forEach(function(r){ if(!seen[r._id]) rows.push(r); });
+    rows.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+    AUDIT_LOGS = rows.slice(0,2000);
+    try{ localStorage.setItem('nx_audit', JSON.stringify(AUDIT_LOGS.slice(0,1000))); }catch(e){}
+  }).catch(function(e){ console.warn('[loadAuditLogsFromCloud]', e.message); });
 }
 var RLH_CALLOUTS = []; // {_id, date, facility, laneType, failureReason, lane, affectedDC, affectedQty, lhRemarks, summary, updatedBy, updatedAt}
 var RLH_MASTER = [];   // {_id, origin, lane, laneType, facilities, dcs, zone, rh, ch}
@@ -2883,13 +2937,29 @@ function fmtDateDisplay(iso){
 }
 // Parse any incoming date format → ISO YYYY-MM-DD
 function parseAnyDate(v){
-  if(!v) return '';
+  if(v===null || v===undefined || v==='') return '';
+  // JS Date object (XLSX cellDates:true sometimes returns these directly)
+  if(v instanceof Date){
+    if(isNaN(v.getTime())) return '';
+    return v.getFullYear()+'-'+pad2(v.getMonth()+1)+'-'+pad2(v.getDate());
+  }
+  // Excel serial number — including WITH a time fraction (e.g. 46189.229287...)
+  // This is the #1 cause of raw numbers like "46189.22928240741" leaking into
+  // date columns: without this check, a serial+time value falls through every
+  // other pattern and the whole cell gets treated as garbage.
+  if(typeof v === 'number' && isFinite(v) && v > 10000 && v < 80000){
+    var dNum = new Date(Math.round((v - 25569) * 86400 * 1000));
+    if(!isNaN(dNum.getTime())) return dNum.getFullYear()+'-'+pad2(dNum.getMonth()+1)+'-'+pad2(dNum.getDate());
+  }
   v = String(v).trim();
   if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-  // Excel serial number (days since 1900-01-01)
-  if(/^\d{4,6}$/.test(v) && parseInt(v) > 10000 && parseInt(v) < 80000){
-    var d = new Date(Math.round((parseInt(v) - 25569) * 86400 * 1000));
-    if(!isNaN(d)) return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  // Excel serial number as text, integer OR with decimal time fraction
+  if(/^\d{4,6}(\.\d+)?$/.test(v)){
+    var serialNum = parseFloat(v);
+    if(serialNum > 10000 && serialNum < 80000){
+      var d = new Date(Math.round((serialNum - 25569) * 86400 * 1000));
+      if(!isNaN(d.getTime())) return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+    }
   }
   // DD-MM-YYYY or DD/MM/YYYY
   var m = v.match(/^(\d{1,2})[\-\/\.](\d{1,2})[\-\/\.](\d{4})$/);
@@ -3692,6 +3762,8 @@ function applySavedTheme(){
   if(t==='light'){ document.body.classList.add('light-theme'); var b=document.getElementById('themeToggleBtn'); if(b) b.innerHTML='☀️ Light'; }
 }
 function doLogout(){
+  if(typeof stopPresenceHeartbeat==='function') stopPresenceHeartbeat();
+  if(typeof clearPresence==='function') clearPresence();
   currentUser = null;
   SESSION_START = null;
   /* v32: clear persisted session so user actually logs out */
@@ -3699,6 +3771,82 @@ function doLogout(){
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='grid';
   document.getElementById('lpwd').value='';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   v35.7 — WHO'S ONLINE (Super Admin only)
+   A lightweight presence heartbeat: every logged-in browser writes its
+   own "I'm here" doc every 3 minutes (not more often, to keep Supabase
+   usage — and billing — low). Super Admin's Admin Panel reads all of
+   these on demand and marks anyone seen in the last 10 minutes online.
+   ═══════════════════════════════════════════════════════════════════ */
+var PRESENCE_INTERVAL = null;
+var PRESENCE_HEARTBEAT_MS = 180000; // 3 min — deliberately infrequent to limit Supabase writes
+var ONLINE_THRESHOLD_MS = 600000;   // 10 min — anyone quieter than this shows as offline
+function _presenceId(){
+  var idf = currentUser && (currentUser.mobile || currentUser.email);
+  return idf ? String(idf).replace(/[^a-zA-Z0-9_@.\-]/g,'_') : '';
+}
+function updatePresence(){
+  if(!currentUser || typeof fbSet!=='function') return;
+  var id = _presenceId(); if(!id) return;
+  fbSet('presence', id, {
+    name: currentUser.name || currentUser.email || '',
+    identifier: currentUser.mobile || currentUser.email || '',
+    role: currentUser.role || '',
+    lastSeen: Date.now(),
+    lastSeenStr: new Date().toLocaleString()
+  });
+}
+function startPresenceHeartbeat(){
+  if(!currentUser) return;
+  updatePresence();
+  if(PRESENCE_INTERVAL) clearInterval(PRESENCE_INTERVAL);
+  PRESENCE_INTERVAL = setInterval(updatePresence, PRESENCE_HEARTBEAT_MS);
+}
+function stopPresenceHeartbeat(){
+  if(PRESENCE_INTERVAL){ clearInterval(PRESENCE_INTERVAL); PRESENCE_INTERVAL = null; }
+}
+function clearPresence(){
+  if(!currentUser || typeof fbDel!=='function') return;
+  var id = _presenceId(); if(id) fbDel('presence', id);
+}
+try{ window.addEventListener('beforeunload', function(){ try{ clearPresence(); }catch(e){} }); }catch(e){}
+
+var ONLINE_USERS = [];
+function loadOnlineUsers(){
+  if(!fbReady || !db) return Promise.resolve();
+  return db.collection('presence').get().then(function(snap){
+    var rows = [];
+    snap.forEach(function(d){ rows.push(Object.assign({_id:d.id}, d.data())); });
+    rows.sort(function(a,b){ return (b.lastSeen||0)-(a.lastSeen||0); });
+    ONLINE_USERS = rows;
+  }).catch(function(e){ console.warn('[loadOnlineUsers]', e.message); });
+}
+function renderOnlineUsers(){
+  var body = document.getElementById('onlineUsersBody');
+  if(!body) return;
+  if(!currentUser || currentUser.role!=='super') return; // Super Admin only
+  var now = Date.now();
+  var rows = (ONLINE_USERS||[]).slice();
+  var onlineCount = rows.filter(function(r){ return (now-(r.lastSeen||0)) < ONLINE_THRESHOLD_MS; }).length;
+  setEl('onlineCount', onlineCount+' online now · '+rows.length+' total tracked (last 3-min heartbeat)');
+  body.innerHTML = rows.length ? rows.map(function(r){
+    var isOnline = (now-(r.lastSeen||0)) < ONLINE_THRESHOLD_MS;
+    var roleBadge = r.role==='super'?'super':r.role==='admin'?'admin':'user';
+    var mins = Math.round((now-(r.lastSeen||0))/60000);
+    return '<tr><td><b>'+esc(r.name||'-')+'</b></td>'
+      +'<td class="mono" style="font-size:.7rem">'+esc(r.identifier||'-')+'</td>'
+      +'<td>'+(r.role?'<span class="badge '+roleBadge+'">'+esc(r.role)+'</span>':'-')+'</td>'
+      +'<td style="font-size:.7rem;color:var(--t2)">'+(mins<1?'just now':mins+' min ago')+'</td>'
+      +'<td>'+(isOnline?'<span class="badge ok">🟢 Online</span>':'<span class="badge inactive">⚪ Offline</span>')+'</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--t2)">No presence data yet</td></tr>';
+}
+/* Called right after a successful login (doLogin already invokes this
+   existing hook) — starts the presence heartbeat for this session. */
+function trackLogin(){
+  if(!currentUser) return;
+  if(typeof startPresenceHeartbeat==='function') startPresenceHeartbeat();
 }
 
 /* v32: Auto-restore session on page load (F5/refresh).
@@ -3741,6 +3889,7 @@ function restoreSession(){
   });
   buildAllFilterBars();
   switchTab('dashboard');
+  if(typeof startPresenceHeartbeat==='function') startPresenceHeartbeat();
   return true;
 }
 
@@ -5725,17 +5874,20 @@ function closeUnknownModal(action){
 function processBulkComplianceRows(rows, input){
   try{
       var totalRead=rows.length, added=0, updated=0, dupRemoved=0, skipped=0;
-      var skippedReasons=[];
+      var errors=[];
       /* In-batch dedup map — key = date|facility|type. If two rows in the SAME upload
          have the same key, the LATER one wins; the earlier is counted as duplicate. */
       var inBatch = {};
       var batch = [];
       rows.forEach(function(r,idx){
-        var date = parseAnyDate(r.date || r.Date);
+        var rowNum = idx+2;
+        var rawDate = (r.date!==undefined&&r.date!=='') ? r.date : r.Date;
+        var date = parseAnyDate(rawDate);
         var facility = norm(r.facility || r['Facility Code'] || r.facility_code);
         var type = S(r.type || r.Type || r.facility_type);
-        if(!date){ skipped++; skippedReasons.push('Row '+(idx+2)+': missing/invalid date'); return; }
-        if(!facility){ skipped++; skippedReasons.push('Row '+(idx+2)+': missing facility code'); return; }
+        if(!rawDate){ skipped++; errors.push({row:rowNum, field:'Date', value:'', reason:'Date is required'}); return; }
+        if(!date){ skipped++; errors.push({row:rowNum, field:'Date', value:rawDate, reason:'Could not read this date — use DD-MM-YYYY (e.g. 15-01-2026)'}); return; }
+        if(!facility){ skipped++; errors.push({row:rowNum, field:'Facility', value:facility, reason:'Facility code is required'}); return; }
         var rec = {
           date: date, facility: facility, type: type,
           rh: norm(r.rh || r.RH),
@@ -5767,10 +5919,10 @@ function processBulkComplianceRows(rows, input){
         fbSet('compliance', docId, rec);
       });
       saveLocal();
-      var msg = '✅ '+totalRead+' rows read · '+added+' added · '+updated+' updated · '+dupRemoved+' duplicates removed · '+skipped+' skipped';
-      toast(msg, dupRemoved+skipped>0 ? 'var(--orange)' : 'var(--green)');
+      var msg = '✅ '+totalRead+' rows read · '+added+' added · '+updated+' updated · '+dupRemoved+' duplicates removed';
+      if(skipped) msg += ' · ⚠ '+skipped+' failed (see report)';
+      toast(msg, (dupRemoved+skipped)>0 ? 'var(--orange)' : 'var(--green)');
       console.log('[bulk upload]', msg);
-      if(skippedReasons.length){ console.log('Skipped:', skippedReasons.slice(0,20)); }
       /* Show breakdown banner inside the table area */
       var banner = document.getElementById('uploadBanner');
       if(!banner){
@@ -5786,11 +5938,12 @@ function processBulkComplianceRows(rows, input){
         +'<span style="color:var(--green)">Added:</span> <b>'+added+'</b> &nbsp;'
         +'<span style="color:var(--blue)">Updated:</span> <b>'+updated+'</b> &nbsp;'
         +'<span style="color:var(--orange)">Duplicates removed:</span> <b>'+dupRemoved+'</b> &nbsp;'
-        +'<span style="color:var(--red)">Skipped:</span> <b>'+skipped+'</b>'
-        + (skipped ? '<div style="font-size:.66rem;color:var(--t2);margin-top:5px">First few skipped: '+skippedReasons.slice(0,3).join(' · ')+'</div>' : '');
+        +'<span style="color:var(--red)">Failed:</span> <b>'+skipped+'</b>'
+        + (skipped ? '<div style="font-size:.66rem;color:var(--t2);margin-top:5px">See the error report popup for exact row/field details.</div>' : '');
       renderCompliance();
       if(typeof recalcAll==="function") recalcAll();
       if(input) input.value = ''; logAudit('bulk-upload','Node Compliance', added+' added, '+updated+' updated');
+      if(errors.length && typeof showUploadErrorReport==='function') showUploadErrorReport('Node Compliance', errors);
     }catch(e){ toast('Upload error: '+e.message,'var(--red)'); console.error(e); }
 }
 
@@ -6883,32 +7036,60 @@ function bulkUploadCallouts(input){
   var reader = new FileReader();
   reader.onload = function(e){
     try{
-      var wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var wb = XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
       var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-      var added = 0, updated = 0;
-      rows.forEach(function(r){
-        var date = parseAnyDate(r.date || r.Date);
-        var facility = S(r.facility || r['Facility Code'] || r.facility_code);
-        var remarks = S(r.remarks || r.Remarks || r['Callout Remarks'] || r.callout || r.Callout);
-        if(!date || !facility || !remarks) return;
-        var rec = {
-          date: date, facility: facility, remarks: remarks,
-          updatedBy: (currentUser&&(currentUser.name||currentUser.email))||'Bulk Upload',
-          updatedAt: new Date().toLocaleString()
-        };
-        // Deterministic key from content prevents duplicate re-uploads of same row
-        var hash = (date+'|'+norm(facility)+'|'+remarks).replace(/[^a-zA-Z0-9_]/g,'_').slice(0,180);
-        rec._id = hash;
-        var dup = CALLOUTS.findIndex(function(x){return x._id===hash;});
-        if(dup>=0){ CALLOUTS[dup]=rec; updated++; } else { CALLOUTS.push(rec); added++; }
-        fbSet('callouts', hash, rec);
+      var errors = [], incoming = [];
+      rows.forEach(function(r,idx){
+        var rowNum = idx+2;
+        try{
+          var rawDate = (r.date!==undefined&&r.date!=='') ? r.date : r.Date;
+          var facility = S(r.facility || r['Facility Code'] || r.facility_code);
+          var remarks = S(r.remarks || r.Remarks || r['Callout Remarks'] || r.callout || r.Callout);
+          if(!rawDate){ errors.push({row:rowNum, field:'Date', value:'', reason:'Date is required'}); return; }
+          var date = parseAnyDate(rawDate);
+          if(!date){ errors.push({row:rowNum, field:'Date', value:rawDate, reason:'Could not read this date — use DD-MM-YYYY (e.g. 15-01-2026)'}); return; }
+          if(!facility){ errors.push({row:rowNum, field:'Facility', value:facility, reason:'Facility code is required'}); return; }
+          if(!remarks){ errors.push({row:rowNum, field:'Remarks', value:remarks, reason:'Callout remarks are required'}); return; }
+          var rec = {
+            date: date, facility: facility, remarks: remarks,
+            updatedBy: (currentUser&&(currentUser.name||currentUser.email))||'Bulk Upload',
+            updatedAt: new Date().toLocaleString()
+          };
+          // Deterministic key from content prevents duplicate re-uploads of same row
+          var hash = (date+'|'+norm(facility)+'|'+remarks).replace(/[^a-zA-Z0-9_]/g,'_').slice(0,180);
+          rec._id = hash;
+          incoming.push({docId:hash, rec:rec});
+        }catch(rowEx){
+          errors.push({row:rowNum, field:'(row)', value:JSON.stringify(r).slice(0,60), reason:rowEx.message||'Unexpected error reading this row'});
+        }
       });
-      saveLocal();
-      toast('Callouts: '+added+' added · '+updated+' updated','var(--green)');
-      if(typeof logAudit==='function') logAudit('bulk-upload','Daily Callout', added+' added, '+updated+' updated');
-      renderCallouts();
-      if(typeof recalcAll==='function') recalcAll();
-      input.value = '';
+
+      var cls = classifyUploadDuplicates(CALLOUTS, incoming, function(o,n){ return diffRecordFields(o,n); });
+
+      function finish(toWrite){
+        var added=0, updated=0;
+        toWrite.forEach(function(item){
+          var i = CALLOUTS.findIndex(function(x){return x._id===item.docId;});
+          if(i>=0){ CALLOUTS[i]=item.rec; updated++; } else { CALLOUTS.push(item.rec); added++; }
+          fbSet('callouts', item.docId, item.rec);
+        });
+        saveLocal();
+        var msg='Callouts: '+added+' added · '+updated+' updated';
+        if(cls.skippedIdentical) msg+=' · '+cls.skippedIdentical+' duplicate skipped';
+        if(errors.length) msg+=' · ⚠ '+errors.length+' row(s) failed (see report)';
+        toast(msg, errors.length?'var(--orange)':'var(--green)');
+        if(typeof logAudit==='function') logAudit('bulk-upload','Daily Callout', added+' added, '+updated+' updated'+(cls.skippedIdentical?', '+cls.skippedIdentical+' duplicate skipped':''));
+        renderCallouts();
+        if(typeof recalcAll==='function') recalcAll();
+        input.value = '';
+        if(errors.length) showUploadErrorReport('Daily Callout', errors);
+      }
+
+      if(cls.conflicts.length){
+        confirmUploadConflicts('Daily Callout', cls.conflicts).then(function(res){ finish(cls.toWrite.concat(res.approved)); });
+      } else {
+        finish(cls.toWrite);
+      }
     }catch(e){ toast('Upload error: '+e.message,'var(--red)'); }
   };
   reader.readAsArrayBuffer(file);
@@ -6922,17 +7103,26 @@ function downloadCalloutTemplate(){
 /* ═══════════════ ADMIN PANEL ═══════════════ */
 function renderAuditLogs(){
   var body=document.getElementById('auditLogBody'); if(!body) return;
+  if(!currentUser || (currentUser.role!=='super' && currentUser.role!=='admin')) return; // Admin & Super Admin only
   var search=(document.getElementById('auditSearch')||{}).value||'';
+  var actionFilter=(document.getElementById('auditActionFilter')||{}).value||'';
+  var CRUD_ACTIONS = ['add','edit','delete','bulk-upload','bulk-delete','wipe','save'];
   var logs=(AUDIT_LOGS||[]).slice();
+  if(actionFilter && actionFilter!=='all'){
+    logs = logs.filter(function(e){ return e.action===actionFilter; });
+  } else if(actionFilter!=='all'){
+    // Default view: uploads / edits / deletes ONLY (per request — not every action type)
+    logs = logs.filter(function(e){ return CRUD_ACTIONS.indexOf(e.action)>=0; });
+  }
   if(search){var sl=search.toLowerCase(); logs=logs.filter(function(e){return ((e.username||'')+(e.module||'')+(e.action||'')+(e.userId||'')+(e.detail||'')).toLowerCase().indexOf(sl)>=0;});}
-  setEl('auditCount', NUM(logs.length)+' entr'+(logs.length===1?'y':'ies'));
+  setEl('auditCount', NUM(logs.length)+' entr'+(logs.length===1?'y':'ies')+' (upload/edit/delete)');
   body.innerHTML = logs.length ? logs.slice(0,500).map(function(e){
     var roleBadge = e.role==='super'?'super':e.role==='admin'?'admin':'user';
     return '<tr><td class="mono" style="font-size:.66rem">'+esc(e.timestamp||'-')+'</td>'
       +'<td class="mono" style="font-size:.68rem">'+esc(e.userId||'-')+'</td>'
       +'<td><b>'+esc(e.username||'-')+'</b></td>'
       +'<td><span class="badge '+roleBadge+'">'+esc(e.role||'-')+'</span></td>'
-      +'<td><span class="badge '+(e.action==='delete'?'warn':'ok')+'">'+esc(e.action||'-')+'</span></td>'
+      +'<td><span class="badge '+(e.action==='delete'||e.action==='bulk-delete'||e.action==='wipe'?'warn':'ok')+'">'+esc(e.action||'-')+'</span></td>'
       +'<td class="t2">'+esc(e.module||'-')+'</td>'
       +'<td style="font-size:.72rem">'+esc(e.detail||'-')+'</td></tr>';
   }).join('') : '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--t2)">No audit entries</td></tr>';
@@ -6973,7 +7163,12 @@ function renderAdmin(){
 
   // RLH MASTER
   renderAdminRLHMaster();
-  if(typeof renderAuditLogs==="function") renderAuditLogs();
+  /* v35.7: Audit Trail — Admin & Super Admin both see it. Render local copy
+     instantly, then fetch the cross-device history from Supabase. */
+  if(currentUser && (currentUser.role==='super' || currentUser.role==='admin')){
+    if(typeof renderAuditLogs==="function") renderAuditLogs();
+    if(typeof loadAuditLogsFromCloud==='function') loadAuditLogsFromCloud().then(function(){ if(typeof renderAuditLogs==='function') renderAuditLogs(); });
+  }
   if(typeof renderNLHMasterAdmin==="function") renderNLHMasterAdmin();
   /* v35.4.5: PVA Plan list */
   if(typeof window.renderPVAPlanAdmin==="function") window.renderPVAPlanAdmin();
@@ -6982,6 +7177,10 @@ function renderAdmin(){
   document.querySelectorAll('.super-only-section').forEach(function(el){
     el.style.display = isSuperAdminOnly ? '' : 'none';
   });
+  /* v35.7: Who's Online — Super Admin only */
+  if(isSuperAdminOnly && typeof loadOnlineUsers==='function'){
+    loadOnlineUsers().then(function(){ if(typeof renderOnlineUsers==='function') renderOnlineUsers(); });
+  }
 
   // MASTER
   setEl('masterCount', NUM(MASTER.length)+' facilities');
@@ -7993,6 +8192,7 @@ function bulkUploadRLH(input){
       var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'', raw:true});
       var added=0, dateErr=0, otherErr=0, missingDS=0;
       var dateErrSamples = [];
+      var dateErrRows = [];
       rows.forEach(function(r, idx){
         /* v35.4.2: STRICT DD-MM-YYYY validation. No fallback parsing. */
         var rawDate = r.date || r.Date || '';
@@ -8000,6 +8200,7 @@ function bulkUploadRLH(input){
           /* Excel serial slipped through — reject so user fixes the cell format */
           dateErr++;
           if(dateErrSamples.length<5) dateErrSamples.push('Row '+(idx+2)+': Excel-serial cell — set the cell as Text and re-enter as DD-MM-YYYY');
+          dateErrRows.push({row:idx+2, field:'Date', value:rawDate, reason:'Cell is a raw Excel date-serial number — set the cell format to Text and re-enter as DD-MM-YYYY'});
           return;
         }
         var rawStr = String(rawDate).trim();
@@ -8007,6 +8208,7 @@ function bulkUploadRLH(input){
         if(!iso){
           dateErr++;
           if(dateErrSamples.length<5) dateErrSamples.push('Row '+(idx+2)+': "'+esc(rawStr||'(blank)')+'" — Invalid Date Format. Please use DD-MM-YYYY');
+          dateErrRows.push({row:idx+2, field:'Date', value:rawStr, reason:'Invalid date format — use DD-MM-YYYY (e.g. 01-06-2026)'});
           return;
         }
         var fac=norm(r.facility||r['Facility']||r['Facility Code']||r['Facility Code / Origin']||r.origin||r.Origin);
@@ -8041,18 +8243,15 @@ function bulkUploadRLH(input){
         rec._id=docId; RLH_CALLOUTS.push(rec); fbSet('rlhCallouts',docId,rec); added++;
       });
       saveLocal();
-      /* Result summary — surface validation errors clearly */
-      if(dateErr){
-        var alertMsg = '❌ RLH Bulk Upload — Date Format Errors\n\n'
-          + dateErr+' row'+(dateErr===1?'':'s')+' rejected due to invalid date format.\n'
-          + 'Required: DD-MM-YYYY (e.g. 01-06-2026)\n\n'
-          + 'Sample errors:\n' + dateErrSamples.join('\n');
-        if(added) alertMsg += '\n\n✓ '+added+' valid rows were imported.';
-        alert(alertMsg);
+      /* Result summary — surface validation errors clearly via the same
+         error-report modal used across every other upload tab */
+      if(dateErr && typeof showUploadErrorReport==='function'){
+        showUploadErrorReport('RLH', dateErrRows);
       }
       var toastMsg = 'RLH upload · '+added+' added · '+dateErr+' date errors · '+otherErr+' other skipped';
       if(missingDS) toastMsg += ' · '+missingDS+' without Date & Shift (fill via Edit later)';
       toast(toastMsg, dateErr?'var(--red)':(missingDS?'var(--yellow)':'var(--green)'));
+      if(typeof logAudit==='function') logAudit('bulk-upload','RLH', added+' added'+(dateErr?', '+dateErr+' date errors':'')+(otherErr?', '+otherErr+' skipped':''));
       renderRLH(); input.value='';
     }catch(e){toast('Upload error: '+e.message,'var(--red)');}
   };
@@ -8350,12 +8549,17 @@ function bulkUploadCOD(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
       var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-      var added=0, updated=0;
-      rows.forEach(function(r){
-        var date=parseAnyDate(r.date||r.Date); var fac=norm(S(r.facility||r['Facility Code']||r.SC));
-        if(!date||!fac) return;
+      var added=0, updated=0, errors=[];
+      rows.forEach(function(r,idx){
+        var rowNum=idx+2;
+        var rawDate=(r.date!==undefined&&r.date!=='')?r.date:r.Date;
+        var fac=norm(S(r.facility||r['Facility Code']||r.SC));
+        if(!rawDate){ errors.push({row:rowNum,field:'Date',value:'',reason:'Date is required'}); return; }
+        var date=parseAnyDate(rawDate);
+        if(!date){ errors.push({row:rowNum,field:'Date',value:rawDate,reason:'Could not read this date — use DD-MM-YYYY (e.g. 15-01-2026)'}); return; }
+        if(!fac){ errors.push({row:rowNum,field:'Facility',value:fac,reason:'Facility code is required'}); return; }
         var rec={date:date,facility:fac,codQty:N(r.codQty||r['COD Qty']),remarks:S(r.remarks||r.Remarks),updatedBy:(currentUser&&(currentUser.name||currentUser.email))||'Bulk',updatedAt:new Date().toLocaleString()};
         var docId=(date+'|'+fac+'|cod').replace(/[^a-zA-Z0-9_]/g,'_');
         rec._id=docId;
@@ -8363,11 +8567,15 @@ function bulkUploadCOD(input){
         if(dup>=0){COD_DATA[dup]=rec;updated++;}else{COD_DATA.push(rec);added++;}
         fbSet('codData',docId,rec);
       });
-      saveLocal(); toast('COD: '+added+' added · '+updated+' updated','var(--green)');
-      if(typeof logAudit==='function') logAudit('bulk-upload','COD', added+' added, '+updated+' updated');
+      saveLocal();
+      var msg='COD: '+added+' added · '+updated+' updated';
+      if(errors.length) msg+=' · ⚠ '+errors.length+' row(s) failed (see report)';
+      toast(msg, errors.length?'var(--orange)':'var(--green)');
+      if(typeof logAudit==='function') logAudit('bulk-upload','COD', added+' added, '+updated+' updated'+(errors.length?', '+errors.length+' failed':''));
       renderCOD();
       if(typeof recalcAll==='function') recalcAll();
       input.value='';
+      if(errors.length && typeof showUploadErrorReport==='function') showUploadErrorReport('COD', errors);
     }catch(e){toast('Upload error: '+e.message,'var(--red)');}
   };
   reader.readAsArrayBuffer(file);
@@ -8495,7 +8703,7 @@ window.addEventListener('DOMContentLoaded', function(){
     var el = document.getElementById('fbar-review');
     if(!el) return;
     el.innerHTML =
-      '<div class="fbar-title">🔍 Review Filters · Single Date · Zone · RH · CH · Facility · Type · Partner</div>'
+      '<div class="fbar-title">🔍 Review Filters · Single Date · Zone · RH · CH · Facility · Type · Partner · Metric</div>'
       +'<div class="frow">'
         +'<div class="fg"><div class="flabel">Date *</div><input type="date" class="finput" id="rvDate" onchange="renderReview()"/></div>'
         +'<div class="fg"><div class="flabel">Zone</div><div id="rvZone"></div></div>'
@@ -8504,6 +8712,7 @@ window.addEventListener('DOMContentLoaded', function(){
         +'<div class="fg"><div class="flabel">Facility</div><div id="rvFac"></div></div>'
         +'<div class="fg"><div class="flabel">Type</div><div id="rvType"></div></div>'
         +'<div class="fg"><div class="flabel">Partner</div><div id="rvPartner"></div></div>'
+        +'<div class="fg"><div class="flabel">Metric</div><div id="rvMetric"></div></div>'
         +'<div style="display:flex;flex-direction:column;gap:5px;justify-content:flex-end">'
           +'<button class="fbtn" onclick="renderReview()">▶ Apply</button>'
           +'<button class="fbtn reset" onclick="resetReviewFilter()">↺ Reset</button>'
@@ -8527,11 +8736,15 @@ window.addEventListener('DOMContentLoaded', function(){
     buildMS('rvFac',  facs,  'All Facilities', 'renderReview');
     buildMS('rvType', types.length?types:FACILITY_TYPES, 'All Types', 'renderReview');
     buildMS('rvPartner', parts, 'All Partners', 'renderReview');
+    /* v35.7: Metric filter — pick which of A–F sections to show per facility
+       (Daily Callout, Node Compliance, COD, RLH, NLH, PVA). Empty selection
+       = show all (same "All ___" convention as every other filter here). */
+    buildMS('rvMetric', ['A · Daily Callout','B · Node Compliance','C · COD','D · RLH','E · NLH','F · PVA'], 'All Metrics', 'renderReview');
   };
 
   window.resetReviewFilter = function(){
     var dt=document.getElementById('rvDate'); if(dt) dt.value=(typeof todayISO==='function')?todayISO():new Date().toISOString().slice(0,10);
-    ['rvZone','rvRH','rvCH','rvFac','rvType','rvPartner'].forEach(function(id){ try{ resetMS(id); }catch(e){} });
+    ['rvZone','rvRH','rvCH','rvFac','rvType','rvPartner','rvMetric'].forEach(function(id){ try{ resetMS(id); }catch(e){} });
     renderReview();
   };
 
@@ -8895,12 +9108,12 @@ window.addEventListener('DOMContentLoaded', function(){
           +'<div><b>'+esc(facility)+'</b> · <span class="t2">'+esc(m.type||'-')+'</span></div>'
           +'<div class="t2" style="font-size:.7rem">RH: '+esc(m.rh||'-')+' · ZH: '+esc(m.zh||'-')+' · Partner: '+esc(m.partner||'-')+' · Zone: '+esc(m.zone||'-')+'</div>'
         +'</div>'
-        +'<div class="rv-section"><div class="rv-section-h">📢 A · DAILY CALLOUT <span class="rv-sub">D1 + D2 · '+d1+' / '+d2+'</span></div>'+renderCalloutBlock(date, facility)+'</div>'
-        +'<div class="rv-section"><div class="rv-section-h">📋 B · NODE COMPLIANCE <span class="rv-sub">D0 only · '+d0+'</span></div>'+renderCompBlock(date, facility)+'</div>'
-        +'<div class="rv-section"><div class="rv-section-h">💰 C · COD <span class="rv-sub">D0 + D1 + D2 · '+d0+' / '+d1+' / '+d2+' · hover ℹ︎ for affected DCs</span></div>'+renderCODBlock(date, facility)+'</div>'
-        +'<div class="rv-section"><div class="rv-section-h">🚚 D · RLH CALLOUT <span class="rv-sub">D0 + D1 + D2 · '+d0+' / '+d1+' / '+d2+' · origin-owned only</span></div>'+renderRLHBlock(date, facility)+'</div>'
-        +'<div class="rv-section"><div class="rv-section-h">🛣️ E · NLH CALLOUT <span class="rv-sub">D1 + D2 · '+d1+' / '+d2+'</span></div>'+renderNLHBlock(date, facility)+'</div>'
-        +'<div class="rv-section"><div class="rv-section-h">📈 F · PVA <span class="rv-sub">D1 + D2 · '+d1+' / '+d2+'</span></div>'+renderPVABlock(date, facility)+'</div>'
+        +'<div class="rv-section" data-metric="A"><div class="rv-section-h">📢 A · DAILY CALLOUT <span class="rv-sub">D1 + D2 · '+d1+' / '+d2+'</span></div>'+renderCalloutBlock(date, facility)+'</div>'
+        +'<div class="rv-section" data-metric="B"><div class="rv-section-h">📋 B · NODE COMPLIANCE <span class="rv-sub">D0 only · '+d0+'</span></div>'+renderCompBlock(date, facility)+'</div>'
+        +'<div class="rv-section" data-metric="C"><div class="rv-section-h">💰 C · COD <span class="rv-sub">D0 + D1 + D2 · '+d0+' / '+d1+' / '+d2+' · hover ℹ︎ for affected DCs</span></div>'+renderCODBlock(date, facility)+'</div>'
+        +'<div class="rv-section" data-metric="D"><div class="rv-section-h">🚚 D · RLH CALLOUT <span class="rv-sub">D0 + D1 + D2 · '+d0+' / '+d1+' / '+d2+' · origin-owned only</span></div>'+renderRLHBlock(date, facility)+'</div>'
+        +'<div class="rv-section" data-metric="E"><div class="rv-section-h">🛣️ E · NLH CALLOUT <span class="rv-sub">D1 + D2 · '+d1+' / '+d2+'</span></div>'+renderNLHBlock(date, facility)+'</div>'
+        +'<div class="rv-section" data-metric="F"><div class="rv-section-h">📈 F · PVA <span class="rv-sub">D1 + D2 · '+d1+' / '+d2+'</span></div>'+renderPVABlock(date, facility)+'</div>'
       +'</div>';
   }
 
@@ -8964,6 +9177,15 @@ window.addEventListener('DOMContentLoaded', function(){
       +'</div>';
     }).join('');
     setEl('reviewBody', html);
+
+    /* v35.7: Apply Metric (A–F) filter — hide sections not in the selection.
+       Empty selection = show all (same convention as every other filter). */
+    var selectedMetrics = (typeof getMS==='function') ? getMS('rvMetric') : [];
+    var letters = (selectedMetrics||[]).map(function(s){ return String(s).charAt(0); });
+    document.querySelectorAll('#reviewBody .rv-section').forEach(function(sec){
+      var m = sec.getAttribute('data-metric');
+      sec.style.display = (letters.length===0 || letters.indexOf(m)>=0) ? '' : 'none';
+    });
   };
 })();
 </script>
@@ -9258,15 +9480,21 @@ window.addEventListener('DOMContentLoaded', function(){
     var reader = new FileReader();
     reader.onload = function(e){
       try{
-        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array',cellDates:true});
         var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
-        var added=0, updated=0, err=0;
-        rows.forEach(function(r){
-          var date = (typeof parseAnyDate==='function') ? parseAnyDate(r.date || r.Date) : S(r.date || r.Date);
+        var added=0, updated=0, err=0, errors=[];
+        rows.forEach(function(r,idx){
+          var rowNum = idx+2;
+          var rawDate = (r.date!==undefined&&r.date!=='') ? r.date : r.Date;
+          var date = (typeof parseAnyDate==='function') ? parseAnyDate(rawDate) : S(rawDate);
           var fac  = norm(r.facility || r.Facility || r['Facility/SC Code'] || r['SC Code'] || r['SC'] || '');
           var type = S(r.type || r.Type || r['SC Type'] || '');
           var plan = N(r.plannedVolume || r['Planned Volume'] || r['Plan'] || r.projection || 0);
-          if(!date || !fac || !type || plan<=0){ err++; return; }
+          if(!rawDate){ err++; errors.push({row:rowNum,field:'Date',value:'',reason:'Date is required'}); return; }
+          if(!date){ err++; errors.push({row:rowNum,field:'Date',value:rawDate,reason:'Could not read this date — use DD-MM-YYYY (e.g. 22-06-2026)'}); return; }
+          if(!fac){ err++; errors.push({row:rowNum,field:'Facility',value:fac,reason:'Facility/SC code is required'}); return; }
+          if(!type){ err++; errors.push({row:rowNum,field:'Type',value:type,reason:'SC Type is required'}); return; }
+          if(plan<=0){ err++; errors.push({row:rowNum,field:'Planned Volume',value:plan,reason:'Planned Volume must be greater than 0'}); return; }
           var docId = (date+'|'+fac+'|'+type).replace(/[^a-zA-Z0-9_]/g,'_');
           var rec = {
             _id: docId, date: date, facility: fac, type: type, plannedVolume: plan,
@@ -9279,10 +9507,13 @@ window.addEventListener('DOMContentLoaded', function(){
           fbPVASet(docId, rec);
         });
         savePVALocal();
-        toast('PVA Plan: '+added+' added · '+updated+' updated · '+err+' errors', err?'var(--yellow)':'var(--green)');
-        if(typeof logAudit==='function') logAudit('bulk-upload','PVA Plan', added+' added · '+updated+' updated · '+err+' errors');
+        var msg = 'PVA Plan: '+added+' added · '+updated+' updated';
+        if(err) msg += ' · ⚠ '+err+' failed (see report)';
+        toast(msg, err?'var(--orange)':'var(--green)');
+        if(typeof logAudit==='function') logAudit('bulk-upload','PVA Plan', added+' added, '+updated+' updated'+(err?', '+err+' failed':''));
         if(document.getElementById('panel-pva') && document.getElementById('panel-pva').classList.contains('active')) renderPVA();
         if(typeof window.renderPVAPlanAdmin==='function') window.renderPVAPlanAdmin();
+        if(errors.length && typeof showUploadErrorReport==='function') showUploadErrorReport('PVA Plan', errors);
       }catch(ex){ toast('Upload error: '+ex.message,'var(--red)'); }
       input.value = '';
     };
@@ -9918,7 +10149,7 @@ window.addEventListener('DOMContentLoaded', function(){
     var reader = new FileReader();
     reader.onload = function(e){
       try{
-        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array',cellDates:true});
         var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
         /* Facility validation — collect unknowns, ask user */
         var unknownFacs = {};
@@ -9939,7 +10170,7 @@ window.addEventListener('DOMContentLoaded', function(){
           }
         }
         var arr = kind==='lmsc' ? window.CONSUMABLES_LMSC : window.CONSUMABLES_FMSC;
-        var added=0, updated=0, err=0, skipped=0;
+        var added=0, updated=0, err=0, skipped=0, errors=[];
         /* Add unknown facilities to Master if user chose */
         if(addToMaster && typeof MASTER!=='undefined'){
           unknownList.forEach(function(fac){
@@ -9949,10 +10180,14 @@ window.addEventListener('DOMContentLoaded', function(){
           });
           if(typeof saveLocal==='function') saveLocal();
         }
-        rows.forEach(function(r){
-          var date = parseAnyDate(r.date || r.Date);
+        rows.forEach(function(r,idx){
+          var rowNum = idx+2;
+          var rawDate = (r.date!==undefined&&r.date!=='') ? r.date : r.Date;
+          var date = parseAnyDate(rawDate);
           var fac = norm(r.facility || r.Facility || r['Facility Code'] || r['Facility/SC Code'] || '');
-          if(!date || !fac){ err++; return; }
+          if(!rawDate){ err++; errors.push({row:rowNum,field:'Date',value:'',reason:'Date is required'}); return; }
+          if(!date){ err++; errors.push({row:rowNum,field:'Date',value:rawDate,reason:'Could not read this date — use DD-MM-YYYY (e.g. 15-01-2026)'}); return; }
+          if(!fac){ err++; errors.push({row:rowNum,field:'Facility',value:fac,reason:'Facility code is required'}); return; }
           if(ignoreUnknowns && !facilityInMaster(fac)){ skipped++; return; }
           var docId = (kind+'|'+date+'|'+fac+'|'+Date.now()+'_'+added).replace(/[^a-zA-Z0-9_]/g,'_');
           var rec = {_id: docId, date:date, facility:fac,
@@ -10017,12 +10252,13 @@ window.addEventListener('DOMContentLoaded', function(){
         saveLocal_cons();
         var m = 'Consumables '+kind.toUpperCase()+': '+added+' added';
         if(updated) m += ' · '+updated+' updated';
-        if(err) m += ' · '+err+' errors';
+        if(err) m += ' · ⚠ '+err+' failed (see report)';
         if(skipped) m += ' · '+skipped+' skipped (unknown facility)';
-        toast(m, err?'var(--yellow)':'var(--green)');
-        if(typeof logAudit==='function') logAudit('bulk-upload','Consumables '+kind.toUpperCase(), added+' rows');
+        toast(m, err?'var(--orange)':'var(--green)');
+        if(typeof logAudit==='function') logAudit('bulk-upload','Consumables '+kind.toUpperCase(), added+' rows'+(err?', '+err+' failed':''));
         if(kind==='lmsc') renderConsumablesLMSC(); else renderConsumablesFMSC();
         if(typeof renderAdmin==='function' && document.getElementById('panel-admin') && document.getElementById('panel-admin').classList.contains('active')) renderAdmin();
+        if(errors.length && typeof showUploadErrorReport==='function') showUploadErrorReport('Consumables '+kind.toUpperCase(), errors);
       }catch(ex){ toast('Upload error: '+ex.message,'var(--red)'); }
       input.value = '';
     };
